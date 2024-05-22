@@ -1,0 +1,531 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+
+Our goal is to minimize the delay, so we consider the negative delay as
+the ``reward.'' Since bandit algorithms maximize reward, minimizing
+negative delay achieves the same.
+
+\hypertarget{functions}{%
+\section{FUNCTIONS}\label{functions}}
+
+Simmer\_mg1 function simulates an M/G/1 queuing system using the simmer
+package.
+
+Parameters:
+
+\begin{itemize}
+\item
+  \texttt{g}: Graph object representing the network topology.
+\item
+  \texttt{Capacity\_Gbps}: Capacity of the links in Gbps.
+\item
+  \texttt{Load}: Load of the system.
+\item
+  \texttt{PS\_size}: Packet sizes.
+\item
+  \texttt{PS\_weights}: Weights of packet sizes.
+\item
+  \texttt{k\_num}: Number of packets to simulate.
+\item
+  \texttt{path\_v}: Vector representing the path in the network.
+\end{itemize}
+
+Returns:
+
+\begin{itemize}
+\tightlist
+\item
+  Vector of spending times for the specified number of packets.
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{simmer\_mg1 }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(g, Capacity\_Gbps, Load, PS\_size, PS\_weights, k\_num, path\_v)\{}
+  
+  \CommentTok{\# Calculate total number of packets in the system}
+\NormalTok{  N }\OtherTok{=} \FunctionTok{sum}\NormalTok{(PS\_size }\SpecialCharTok{*}\NormalTok{ PS\_weights)}
+  
+  \CommentTok{\# Calculate node capacity in Bps}
+\NormalTok{  nodes\_capacity\_Bps }\OtherTok{=}\NormalTok{ Capacity\_Gbps }\SpecialCharTok{*} \FloatTok{1e9}
+  
+  \CommentTok{\# Get edge IDs for the given path}
+\NormalTok{  path\_e }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(}\DecValTok{2}\SpecialCharTok{:}\FunctionTok{length}\NormalTok{(path\_v), }\ControlFlowTok{function}\NormalTok{(i) \{}
+    \FunctionTok{get.edge.ids}\NormalTok{(g, }\FunctionTok{as.vector}\NormalTok{(}\FunctionTok{c}\NormalTok{(path\_v[i}\DecValTok{{-}1}\NormalTok{], path\_v[i])))}
+\NormalTok{  \})}
+  
+  \CommentTok{\# Calculate capacity per packet in Bps}
+\NormalTok{  Capacity\_ps }\OtherTok{=}\NormalTok{ Capacity\_Gbps }\SpecialCharTok{*} \FloatTok{1e9} \SpecialCharTok{/}\NormalTok{ (}\DecValTok{8} \SpecialCharTok{*}\NormalTok{ N)}
+  
+  \CommentTok{\# Calculate traffic per packet in Bps}
+\NormalTok{  traffic\_ps }\OtherTok{=}\NormalTok{ Capacity\_ps }\SpecialCharTok{*}\NormalTok{ Load}
+  
+  \CommentTok{\# Calculate service rate}
+\NormalTok{  mu }\OtherTok{=} \DecValTok{1} \SpecialCharTok{/}\NormalTok{ Capacity\_ps}
+  
+  \CommentTok{\# Calculate variance of the number of packets in the system}
+\NormalTok{  var\_N }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{(PS\_size}\SpecialCharTok{\^{}}\DecValTok{2} \SpecialCharTok{*}\NormalTok{ PS\_weights) }\SpecialCharTok{{-}}\NormalTok{ N}\SpecialCharTok{\^{}}\DecValTok{2}
+\NormalTok{  Cs2 }\OtherTok{\textless{}{-}}\NormalTok{ var\_N }\SpecialCharTok{/}\NormalTok{ (N}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+  
+  \CommentTok{\# Calculate theoretical queue delay for each link in the path}
+\NormalTok{  theor\_qeueu\_delay\_link\_mg1 }\OtherTok{\textless{}{-}}\NormalTok{ mu }\SpecialCharTok{*}\NormalTok{ Load }\SpecialCharTok{/}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{{-}}\NormalTok{ Load) }\SpecialCharTok{*}\NormalTok{ (}\DecValTok{1} \SpecialCharTok{+}\NormalTok{ Cs2) }\SpecialCharTok{/} \DecValTok{2} \SpecialCharTok{+}\NormalTok{ mu}
+\NormalTok{  theor\_qeueu\_delay\_mg1 }\OtherTok{\textless{}{-}}\NormalTok{ theor\_qeueu\_delay\_link\_mg1}\SpecialCharTok{*}\FunctionTok{length}\NormalTok{(path\_e)}
+  \CommentTok{\# Calculate theoretical propagation delay for each link in the path}
+\NormalTok{  theor\_prop\_delay\_link\_mg1 }\OtherTok{\textless{}{-}} \FloatTok{5e{-}6} \SpecialCharTok{*} \FunctionTok{E}\NormalTok{(g)}\SpecialCharTok{$}\NormalTok{Distance[path\_e]}
+  
+  \CommentTok{\# Print total average delay}
+  \FunctionTok{cat}\NormalTok{(}\StringTok{"Total average delay"}\NormalTok{, theor\_qeueu\_delay\_mg1 }\SpecialCharTok{+} \FunctionTok{sum}\NormalTok{(theor\_prop\_delay\_link\_mg1), }\StringTok{"s }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+  
+  \CommentTok{\# Initialize simulation environment}
+\NormalTok{  env }\OtherTok{\textless{}{-}} \FunctionTok{simmer}\NormalTok{()}
+  
+  \CommentTok{\# Add resources for each node in the graph}
+  \ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\FunctionTok{length}\NormalTok{(}\FunctionTok{V}\NormalTok{(g))) \{}
+\NormalTok{    env }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{add\_resource}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(}\StringTok{"node\_"}\NormalTok{, i), }\DecValTok{1}\NormalTok{) }
+\NormalTok{  \}  }
+  
+  \CommentTok{\# Create trajectory for each link in the path}
+\NormalTok{  trajectory\_name }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(}\DecValTok{1}\SpecialCharTok{:}\FunctionTok{length}\NormalTok{(path\_e), }\ControlFlowTok{function}\NormalTok{(i) \{}
+    \FunctionTok{trajectory}\NormalTok{() }\SpecialCharTok{\%\textgreater{}\%}
+      \FunctionTok{seize}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(}\StringTok{"node\_"}\NormalTok{, path\_v[i])) }\SpecialCharTok{\%\textgreater{}\%}
+      \FunctionTok{timeout}\NormalTok{(}\ControlFlowTok{function}\NormalTok{() }\DecValTok{8} \SpecialCharTok{*} \FunctionTok{sample}\NormalTok{(PS\_size, }\AttributeTok{size =} \DecValTok{1}\NormalTok{, }\AttributeTok{replace =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{prob =}\NormalTok{ PS\_weights) }\SpecialCharTok{/}\NormalTok{ nodes\_capacity\_Bps) }\SpecialCharTok{\%\textgreater{}\%}
+      \FunctionTok{release}\NormalTok{(}\FunctionTok{paste0}\NormalTok{(}\StringTok{"node\_"}\NormalTok{, path\_v[i])) }\SpecialCharTok{\%\textgreater{}\%}
+      \FunctionTok{timeout}\NormalTok{(}\ControlFlowTok{function}\NormalTok{() theor\_prop\_delay\_link\_mg1[i])}
+\NormalTok{  \}) }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{join}\NormalTok{()}
+  
+  \CommentTok{\# Define arrival process}
+\NormalTok{  env }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{add\_generator}\NormalTok{(}\StringTok{"trajectory\_name"}\NormalTok{, trajectory\_name, }\ControlFlowTok{function}\NormalTok{() }\FunctionTok{rexp}\NormalTok{(}\DecValTok{1}\NormalTok{, traffic\_ps))}
+  
+  \CommentTok{\# Run simulation}
+\NormalTok{  env }\SpecialCharTok{\%\textgreater{}\%} \FunctionTok{run}\NormalTok{(}\AttributeTok{until =}\NormalTok{ (k\_num}\FloatTok{+1e3}\NormalTok{) }\SpecialCharTok{/}\NormalTok{ traffic\_ps)}
+  
+  \CommentTok{\# Get spending times for all arrivals up to k\_num}
+\NormalTok{  all\_arrivals\_res }\OtherTok{\textless{}{-}} \FunctionTok{data.frame}\NormalTok{(env }\SpecialCharTok{\%\textgreater{}\%}
+                                   \FunctionTok{get\_mon\_arrivals}\NormalTok{(}\AttributeTok{per\_resource =} \ConstantTok{FALSE}\NormalTok{) }\SpecialCharTok{\%\textgreater{}\%}
+                                   \FunctionTok{transform}\NormalTok{(}\AttributeTok{waiting\_time\_in\_queue =} \FunctionTok{round}\NormalTok{(end\_time }\SpecialCharTok{{-}}\NormalTok{ start\_time }\SpecialCharTok{{-}}\NormalTok{ activity\_time)) }\SpecialCharTok{\%\textgreater{}\%}
+                                   \FunctionTok{transform}\NormalTok{(}\AttributeTok{spending\_time =}\NormalTok{ end\_time }\SpecialCharTok{{-}}\NormalTok{ start\_time))}
+  
+  \CommentTok{\# Return spending times for k\_num arrivals}
+  \FunctionTok{return}\NormalTok{(all\_arrivals\_res}\SpecialCharTok{$}\NormalTok{spending\_time[}\DecValTok{1}\SpecialCharTok{:}\NormalTok{k\_num])}
+  
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+Function to check convergence based on average rewards
+
+The convergence criterion is defined as follows:
+
+\[ \text{Var} < \text{threshold} \]
+
+where \(\text{variance}\) is calculated as:
+
+\[ \text{Var} = \sum_{i=1}^{n} (\overline{\text{Reward_curr}}_i - \overline{\text{Reward_prev_n}}_i)^2 \]
+
+Here, \$ \overline{\text{Reward_curr}}\_i \$represents the average
+rewards for the current trial, and \$ \overline{\text{Reward_prev_n}}\_i
+\$ represents the mean of the previous \$ n \$ average rewards.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{get\_n\_trial\_convergence }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(all\_average\_rewards, i\_trial, conv\_num, convergence\_threshold) \{}
+  
+  \CommentTok{\# Check if the current trial is less than or equal to the convergence window}
+  \ControlFlowTok{if}\NormalTok{ (i\_trial }\SpecialCharTok{\textless{}}\NormalTok{ conv\_num) \{}
+    \FunctionTok{return}\NormalTok{(}\ConstantTok{FALSE}\NormalTok{)  }\CommentTok{\# Not converged yet}
+\NormalTok{  \}}
+  
+  \CommentTok{\# Retrieve the average rewards for the current trial}
+\NormalTok{  current\_average\_rewards }\OtherTok{\textless{}{-}}  \FunctionTok{ifelse}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(all\_average\_rewards[[i\_trial]]), }\DecValTok{0}\NormalTok{, all\_average\_rewards[[i\_trial]])}
+  
+  \CommentTok{\# Retrieve the previous n average rewards (convergence window)}
+\NormalTok{  prev\_n\_average\_rewards }\OtherTok{\textless{}{-}}\NormalTok{ all\_average\_rewards[(i\_trial }\SpecialCharTok{{-}}\NormalTok{ conv\_num)}\SpecialCharTok{:}\NormalTok{(i\_trial }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{)]}
+  
+  \CommentTok{\# Calculate the total sum of the previous n average rewards for each iteration}
+\NormalTok{  total\_sum }\OtherTok{\textless{}{-}} \FunctionTok{colSums}\NormalTok{(}\FunctionTok{do.call}\NormalTok{(rbind, }\FunctionTok{lapply}\NormalTok{(prev\_n\_average\_rewards, }\ControlFlowTok{function}\NormalTok{(x) }\FunctionTok{ifelse}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(x), }\DecValTok{0}\NormalTok{, x))))}
+  
+  \CommentTok{\# Calculate the mean of the previous n average rewards}
+\NormalTok{  prev\_n\_mean }\OtherTok{\textless{}{-}}\NormalTok{ total\_sum }\SpecialCharTok{/}\NormalTok{ conv\_num}
+  
+  \CommentTok{\# Calculate the variance between the current average rewards and the previous n mean}
+\NormalTok{  variance }\OtherTok{\textless{}{-}} \FunctionTok{sum}\NormalTok{((current\_average\_rewards }\SpecialCharTok{{-}}\NormalTok{ prev\_n\_mean)}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{)}
+  
+  \CommentTok{\# Check if the variance is less than the convergence threshold}
+  \ControlFlowTok{if}\NormalTok{ (variance }\SpecialCharTok{\textless{}}\NormalTok{ convergence\_threshold) \{}
+    \FunctionTok{cat}\NormalTok{(}\StringTok{"Var ="}\NormalTok{, variance, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+    \FunctionTok{cat}\NormalTok{(}\StringTok{"Converged at trial"}\NormalTok{, i\_trial, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)  }\CommentTok{\# Print convergence message}
+    \FunctionTok{cat}\NormalTok{(}\StringTok{"Converged:"}\NormalTok{,converged)}
+    \FunctionTok{return}\NormalTok{(}\ConstantTok{TRUE}\NormalTok{)  }\CommentTok{\# Converged}
+\NormalTok{  \} }\ControlFlowTok{else}\NormalTok{ \{}
+    \FunctionTok{return}\NormalTok{(}\ConstantTok{FALSE}\NormalTok{)  }\CommentTok{\# Not converged yet}
+\NormalTok{  \}}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{definition-of-basic-parameters}{%
+\section{DEFINITION OF BASIC
+PARAMETERS}\label{definition-of-basic-parameters}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{path1\_v }\OtherTok{=} \FunctionTok{c}\NormalTok{(}\DecValTok{11}\NormalTok{, }\DecValTok{10}\NormalTok{, }\DecValTok{13}\NormalTok{, }\DecValTok{04}\NormalTok{) }
+\NormalTok{path2\_v }\OtherTok{=} \FunctionTok{c}\NormalTok{(}\DecValTok{11}\NormalTok{, }\DecValTok{09}\NormalTok{, }\DecValTok{03}\NormalTok{, }\DecValTok{01}\NormalTok{)  }
+\NormalTok{path3\_v }\OtherTok{=} \FunctionTok{c}\NormalTok{(}\DecValTok{11}\NormalTok{, }\DecValTok{12}\NormalTok{, }\DecValTok{15}\NormalTok{, }\DecValTok{20}\NormalTok{, }\DecValTok{16}\NormalTok{)}
+\NormalTok{path4\_v }\OtherTok{=} \FunctionTok{c}\NormalTok{(}\DecValTok{11}\NormalTok{, }\DecValTok{9}\NormalTok{, }\DecValTok{3}\NormalTok{, }\DecValTok{2}\NormalTok{, }\DecValTok{8}\NormalTok{, }\DecValTok{7}\NormalTok{) }
+\NormalTok{arms }\OtherTok{=} \DecValTok{4} \CommentTok{\# 4 paths}
+
+\NormalTok{n\_trials }\OtherTok{\textless{}{-}} \DecValTok{10000} \CommentTok{\# Number of trials}
+\NormalTok{epsilon }\OtherTok{\textless{}{-}} \FloatTok{0.7} \CommentTok{\# Exploration rate}
+
+\NormalTok{PS\_size}\OtherTok{=}\FunctionTok{c}\NormalTok{((}\DecValTok{64}\SpecialCharTok{+}\DecValTok{127}\NormalTok{)}\SpecialCharTok{/}\DecValTok{2}\NormalTok{,(}\DecValTok{128}\SpecialCharTok{+}\DecValTok{255}\NormalTok{)}\SpecialCharTok{/}\DecValTok{2}\NormalTok{,(}\DecValTok{256}\SpecialCharTok{+}\DecValTok{511}\NormalTok{)}\SpecialCharTok{/}\DecValTok{2}\NormalTok{, (}\DecValTok{512}\SpecialCharTok{+}\DecValTok{1023}\NormalTok{)}\SpecialCharTok{/}\DecValTok{2}\NormalTok{, (}\DecValTok{1024}\SpecialCharTok{+}\DecValTok{1513}\NormalTok{)}\SpecialCharTok{/}\DecValTok{2}\NormalTok{, }\DecValTok{1514}\NormalTok{, (}\DecValTok{1515}\SpecialCharTok{+}\DecValTok{9100}\NormalTok{)}\SpecialCharTok{/}\DecValTok{2}\NormalTok{)}
+\NormalTok{PS\_weights}\OtherTok{=}\FunctionTok{c}\NormalTok{(}\FloatTok{33.2}\SpecialCharTok{/}\DecValTok{100}\NormalTok{, }\FloatTok{5.4}\SpecialCharTok{/}\DecValTok{100}\NormalTok{, }\FloatTok{3.3}\SpecialCharTok{/}\DecValTok{100}\NormalTok{, }\FloatTok{3.7}\SpecialCharTok{/}\DecValTok{100}\NormalTok{, }\FloatTok{34.6}\SpecialCharTok{/}\DecValTok{100}\NormalTok{, }\FloatTok{14.6}\SpecialCharTok{/}\DecValTok{100}\NormalTok{, }\FloatTok{5.2}\SpecialCharTok{/}\DecValTok{100}\NormalTok{)}
+\NormalTok{N }\OtherTok{=} \FunctionTok{sum}\NormalTok{(PS\_size}\SpecialCharTok{*}\NormalTok{PS\_weights)}
+\NormalTok{N}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1019.035
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{topology\_name }\OtherTok{=} \StringTok{"Tokyo"}
+\NormalTok{file\_name\_v2 }\OtherTok{\textless{}{-}} \StringTok{"..//input\_files//Metro\_topology\_full\_Tokyo.xlsx"}
+\NormalTok{nodes\_info }\OtherTok{\textless{}{-}} \FunctionTok{read\_excel}\NormalTok{(file\_name\_v2, }\AttributeTok{sheet =} \DecValTok{1}\NormalTok{)}
+\NormalTok{links\_info }\OtherTok{\textless{}{-}} \FunctionTok{read\_excel}\NormalTok{(file\_name\_v2, }\AttributeTok{sheet =} \DecValTok{2}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{igraph-calculations}{%
+\section{Igraph calculations}\label{igraph-calculations}}
+
+\begin{verbatim}
+## National nodes: 1 4 5
+\end{verbatim}
+
+\begin{verbatim}
+## Regional nodes: 7 13 16
+\end{verbatim}
+
+\includegraphics{main_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\begin{verbatim}
+## Distance for path1: 2.6 km
+\end{verbatim}
+
+\begin{verbatim}
+## Distance for path2: 3 km
+\end{verbatim}
+
+\begin{verbatim}
+## Distance for path3: 2.8 km
+\end{verbatim}
+
+\begin{verbatim}
+## Distance for path4: 5 km
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{k\_num }\OtherTok{=}\NormalTok{ n\_trials}
+\NormalTok{mg1\_packets\_path1 }\OtherTok{\textless{}{-}} \FunctionTok{simmer\_mg1}\NormalTok{(g, }\AttributeTok{Capacity\_Gbps =} \DecValTok{10}\NormalTok{, }\AttributeTok{Load =} \FloatTok{0.8}\NormalTok{, PS\_size, PS\_weights, k\_num, path1\_v)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Total average delay 2.669341e-05 s
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{mg1\_packets\_path2 }\OtherTok{\textless{}{-}} \FunctionTok{simmer\_mg1}\NormalTok{(g, }\AttributeTok{Capacity\_Gbps =} \DecValTok{10}\NormalTok{, }\AttributeTok{Load =} \FloatTok{0.5}\NormalTok{, PS\_size, PS\_weights, k\_num, path2\_v)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Total average delay 2.025762e-05 s
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{mg1\_packets\_path3 }\OtherTok{\textless{}{-}} \FunctionTok{simmer\_mg1}\NormalTok{(g, }\AttributeTok{Capacity\_Gbps =} \DecValTok{10}\NormalTok{, }\AttributeTok{Load =} \FloatTok{0.4}\NormalTok{, PS\_size, PS\_weights, k\_num, path3\_v)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Total average delay 1.976041e-05 s
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{mg1\_packets\_path4 }\OtherTok{\textless{}{-}} \FunctionTok{simmer\_mg1}\NormalTok{(g, }\AttributeTok{Capacity\_Gbps =} \DecValTok{10}\NormalTok{, }\AttributeTok{Load =} \FloatTok{0.1}\NormalTok{, PS\_size, PS\_weights, k\_num, path4\_v)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Total average delay 2.959687e-05 s
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Total average delay path1"}\NormalTok{, }\FunctionTok{mean}\NormalTok{(mg1\_packets\_path1), }\StringTok{"s }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Total average delay path1 2.779951e-05 s
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Total average delay path2"}\NormalTok{, }\FunctionTok{mean}\NormalTok{(mg1\_packets\_path2), }\StringTok{"s }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Total average delay path2 2.030914e-05 s
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Total average delay path3"}\NormalTok{, }\FunctionTok{mean}\NormalTok{(mg1\_packets\_path3), }\StringTok{"s }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Total average delay path3 1.984016e-05 s
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Total average delay path4"}\NormalTok{, }\FunctionTok{mean}\NormalTok{(mg1\_packets\_path4), }\StringTok{"s }\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Total average delay path4 2.966001e-05 s
+\end{verbatim}
+
+\includegraphics{main_files/figure-latex/unnamed-chunk-9-1.pdf}
+
+\hypertarget{initialization}{%
+\section{INITIALIZATION}\label{initialization}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\#arms \textless{}{-} length(mu)}
+\NormalTok{counts }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(arms) }\CommentTok{\# A vector initialized with zeros to track how many times each path has been selected}
+\NormalTok{rewards }\OtherTok{\textless{}{-}} \FunctionTok{numeric}\NormalTok{(arms) }\CommentTok{\# A vector initialized with zeros to accumulate the total rewards (negative delays) obtained from each path}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{simulations}{%
+\section{SIMULATIONS}\label{simulations}}
+
+\begin{itemize}
+\item
+  \texttt{conv\_num}: This variable represents the number of previous
+  trials used for convergence checking. It specifies the number of
+  previous average rewards to consider when checking for convergence.
+\item
+  \texttt{convergence\_threshold}: This variable defines the threshold
+  for convergence, maximum allowed variance between the current average
+  rewards and the mean of the previous \texttt{conv\_num} average
+  rewards. If the variance falls below this threshold, the system is
+  considered converged.
+\item
+  \texttt{converged}: This variable is a boolean flag that indicates
+  whether the system has converged or not.
+\end{itemize}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{converged\_at\_trial }\OtherTok{\textless{}{-}} \DecValTok{0}
+\NormalTok{conv\_num }\OtherTok{\textless{}{-}} \DecValTok{5}
+\NormalTok{convergence\_threshold }\OtherTok{\textless{}{-}} \FloatTok{1e{-}18}
+\NormalTok{all\_average\_rewards }\OtherTok{\textless{}{-}} \FunctionTok{list}\NormalTok{() }
+\NormalTok{converged }\OtherTok{\textless{}{-}} \ConstantTok{FALSE}
+
+\ControlFlowTok{for}\NormalTok{(i }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\NormalTok{n\_trials)\{}
+  \CommentTok{\# Decide to explore or exploit}
+  \ControlFlowTok{if}\NormalTok{(}\FunctionTok{runif}\NormalTok{(}\DecValTok{1}\NormalTok{) }\SpecialCharTok{\textless{}}\NormalTok{ epsilon)\{}
+    \CommentTok{\# Exploration: choose a random path}
+\NormalTok{    chosen\_arm }\OtherTok{\textless{}{-}} \FunctionTok{sample}\NormalTok{(arms, }\DecValTok{1}\NormalTok{)}
+\NormalTok{  \} }\ControlFlowTok{else}\NormalTok{ \{}
+    \CommentTok{\# Exploitation: choose the best path based on average reward}
+    \CommentTok{\#average\_rewards \textless{}{-} rewards/pmax(counts, 1)}
+\NormalTok{    average\_rewards }\OtherTok{\textless{}{-}}\NormalTok{ rewards}\SpecialCharTok{/}\FunctionTok{pmax}\NormalTok{(counts, }\DecValTok{1}\NormalTok{)}
+\NormalTok{    chosen\_arm }\OtherTok{\textless{}{-}} \FunctionTok{which.max}\NormalTok{(average\_rewards)}
+\NormalTok{  \}}
+  
+  \CommentTok{\# Simulate the delay (reward) from the chosen path}
+\NormalTok{  reward }\OtherTok{\textless{}{-}} \SpecialCharTok{{-}}\ControlFlowTok{switch}\NormalTok{(chosen\_arm,}
+                 \FunctionTok{sample}\NormalTok{(mg1\_packets\_path1,}\DecValTok{1}\NormalTok{),}
+                 \FunctionTok{sample}\NormalTok{(mg1\_packets\_path2,}\DecValTok{1}\NormalTok{),}
+                 \FunctionTok{sample}\NormalTok{(mg1\_packets\_path3,}\DecValTok{1}\NormalTok{),}
+                 \FunctionTok{sample}\NormalTok{(mg1\_packets\_path4,}\DecValTok{1}\NormalTok{))}\CommentTok{\#{-}rnorm(1, mu[chosen\_arm], sigma[chosen\_arm])}
+
+  \CommentTok{\# Update counts and rewards}
+\NormalTok{  counts[chosen\_arm] }\OtherTok{\textless{}{-}}\NormalTok{ counts[chosen\_arm] }\SpecialCharTok{+} \DecValTok{1}
+\NormalTok{  rewards[chosen\_arm] }\OtherTok{\textless{}{-}}\NormalTok{ rewards[chosen\_arm] }\SpecialCharTok{+}\NormalTok{ reward}
+
+\NormalTok{  all\_average\_rewards[[i]] }\OtherTok{\textless{}{-}}\NormalTok{ rewards}\SpecialCharTok{/}\NormalTok{counts}
+  
+  \ControlFlowTok{if}\NormalTok{ (}\FunctionTok{get\_n\_trial\_convergence}\NormalTok{(all\_average\_rewards, i, conv\_num, convergence\_threshold)) \{}
+    \ControlFlowTok{break}
+\NormalTok{  \}}
+    
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Var = 5.872817e-19 
+## Converged at trial 1091 
+## Converged: FALSE
+\end{verbatim}
+
+\hypertarget{results}{%
+\section{RESULTS}\label{results}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{average\_rewards }\OtherTok{\textless{}{-}}\NormalTok{ rewards}\SpecialCharTok{/}\NormalTok{counts}
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Counts of selections for each path:"}\NormalTok{, counts, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Counts of selections for each path: 194 174 514 209
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"Average rewards (negative delay) for each path:"}\NormalTok{, average\_rewards, }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Average rewards (negative delay) for each path: -2.733332e-05 -2.022073e-05 -1.990482e-05 -2.98208e-05
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"The best path is: Path"}\NormalTok{, }\FunctionTok{which.max}\NormalTok{(average\_rewards), }\StringTok{"}\SpecialCharTok{\textbackslash{}n}\StringTok{"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## The best path is: Path 3
+\end{verbatim}
+
+\end{document}

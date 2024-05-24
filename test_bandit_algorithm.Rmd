@@ -286,7 +286,6 @@ legend("topright", legend=c("Path 1", "Path 2", "Path 3", "Path 4"),
 # Reset to a single plot
 par(mfrow=c(1, 1))
 grid()
-
 ```
 
 
@@ -296,7 +295,6 @@ grid()
 #arms <- length(mu)
 counts <- numeric(arms) # A vector initialized with zeros to track how many times each path has been selected
 rewards <- numeric(arms) # A vector initialized with zeros to accumulate the total rewards (negative delays) obtained from each path
-
 ```
 
 - `conv_num`: This variable represents the number of previous trials used for convergence checking. It specifies the number of previous average rewards to consider when checking for convergence.
@@ -340,9 +338,7 @@ for(i in 1:n_trials){
   if (get_n_trial_convergence(all_average_rewards, i, conv_num, convergence_threshold)) {
     break
   }
-    
 }
-
 ```
 
 ## Results
@@ -351,7 +347,6 @@ average_rewards <- rewards/counts
 cat("Counts of selections for each path:", counts, "\n")
 cat("Average rewards (negative delay) for each path:", average_rewards, "\n")
 cat("The best path is: Path", which.max(average_rewards), "\n")
-
 ```
 
 

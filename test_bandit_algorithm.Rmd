@@ -11,11 +11,10 @@ achieves the same.
 library(readxl)
 library(igraph)
 library(simmer)
-
 ```
-# Functions
 
-## Simmer_mg1 function simulates an M/G/1 queuing system using the simmer package.
+# Functions
+## `simmer_mg1` function: Simulates an M/G/1 queuing system using the simmer package.
 
 Parameters:
 
@@ -37,7 +36,6 @@ Parameters:
  
  - Vector of spending times for the specified number of packets.
 ```{r}
-
 simmer_mg1 <- function(g, Capacity_Gbps, Load, PS_size, PS_weights, k_num, path_v){
   
   # Calculate total number of packets in the system
@@ -106,11 +104,9 @@ simmer_mg1 <- function(g, Capacity_Gbps, Load, PS_size, PS_weights, k_num, path_
   return(all_arrivals_res$spending_time[1:k_num])
   
 }
- 
-
 ```
 
-## Function to check convergence based on average rewards
+## `get_n_trial_convergence` function: Checks convergence based on average rewards.
 
 The convergence criterion is defined as follows:
 
@@ -120,8 +116,6 @@ where \(\text{Err} \) is calculated as:
 $$ \text{Err} = \frac{\sum_{i=1}^{n} |\overline{\text{Reward\_curr}}_i - \overline{\text{Reward\_prev\_n}}_i|}{|\overline{\text{Reward\_prev\_n}}_i|}$$
 
 Here, \( \overline{\text{Reward\_curr}}_{i} \) represents the average rewards for the current trial, and \(\overline{\text{Reward\_prev\_n}}_{i}\) represents the mean of the previous \( n \) average rewards. 
-
-
 
 ```{r}
 get_n_trial_convergence <- function(all_average_rewards, i_trial, conv_num, convergence_threshold) {
@@ -157,12 +151,11 @@ get_n_trial_convergence <- function(all_average_rewards, i_trial, conv_num, conv
     return(FALSE)  # Not converged yet
   }
 }
-
 ```
 
-# DEFINITION OF BASIC PARAMETERS
 
-```{r}
+# Definition of basic parameters
+```{r warning=FALSE}
 path1_v = c(11, 10, 13, 04) 
 path2_v = c(11, 09, 03, 01)  
 path3_v = c(11, 12, 15, 20, 16)
@@ -178,17 +171,13 @@ N = sum(PS_size*PS_weights)
 N
 
 topology_name = "Tokyo"
-file_name_v2 <- "..//input_files//Metro_topology_full_Tokyo.xlsx"
+file_name_v2 <- "input_files/Metro_topology_full_Tokyo.xlsx"
 nodes_info <- read_excel(file_name_v2, sheet = 1)
 links_info <- read_excel(file_name_v2, sheet = 2)
-
 ```
 
-
-# Igraph calculations
-
+# igraph calculations
 ```{r echo=FALSE}
-
 national_nodes <- c()
 regional_nodes <- c()
 
@@ -204,20 +193,17 @@ for (i in seq_along(nodes_info$node_code)) {
 cat("National nodes:", national_nodes, "\n")
 cat("Regional nodes:", regional_nodes, "\n")
 
-##Building the graph:
 
-
+# Building the graph:
 g <- graph_from_data_frame(links_info, directed = TRUE, vertices = nodes_info)
 
 ##Calculations of the capacity in p/s
-
 E(g)$Distance <- E(g)$distanceKm
 E(g)$Definition <- paste0(as_edgelist(g)[,1],"->",as_edgelist(g)[,2])
 E(g)$Capacity <- E(g)$capacityGbps*10^9/(8*N)
 
-##Plot graph
 
-#plot graph
+#Plot graph
 V(g)$color <- "gray"
 V(g)$color[national_nodes] <- "red"
 V(g)$color[regional_nodes] <- "yellow"
@@ -226,6 +212,7 @@ deg <- degree(g, mode="all")
 V(g)$size <- deg*1.5
 l <- layout_nicely(g)
 set.seed(321)
+
 # Get edge ids for each path
 path1_e <- sapply(2:length(path1_v), function(i) {
   get.edge.ids(g, as.vector(c(path1_v[i-1], path1_v[i])))
@@ -244,7 +231,6 @@ E(g)$color <- "gray"
 E(g)$color[c(path1_e,path2_e,path3_e,path4_e)] <- "red"
 
 plot(g, edge.arrow.size=.3, vertex.label = V(g)$name, edge.curved=.5, layout=l)
-
 ```
 ```{r include=FALSE}
 # Print the results
@@ -303,9 +289,9 @@ grid()
 
 ```
 
-# Smulation for the average delay
-## Initialization
 
+# Simulation for the average delay
+## Initialization
 ```{r}
 #arms <- length(mu)
 counts <- numeric(arms) # A vector initialized with zeros to track how many times each path has been selected
@@ -318,7 +304,6 @@ rewards <- numeric(arms) # A vector initialized with zeros to accumulate the tot
 - `convergence_threshold`: This variable defines the threshold for convergence, maximum allowed variance between the current average rewards and the mean of the previous `conv_num` average rewards. If the variance falls below this threshold, the system is considered converged.
 
 - `converged`: This variable is a boolean flag that indicates whether the system has converged or not.
-
 
 ```{r echo=TRUE}
 converged_at_trial <- 0
@@ -361,7 +346,6 @@ for(i in 1:n_trials){
 ```
 
 ## Results
-
 ```{r}
 average_rewards <- rewards/counts
 cat("Counts of selections for each path:", counts, "\n")
@@ -372,7 +356,6 @@ cat("The best path is: Path", which.max(average_rewards), "\n")
 
 
 # Simulation for the percentiles
-
 ## Checking if e2e delay is below the given threshold
 
 $T_{\text{threshold}}$ = 25 ms 
@@ -412,7 +395,6 @@ grid()
 ```
 
 Percent above threshold for entire population:
-
 ```{r include=FALSE}
 theor_perc <- function(mg1_packet_delays, threshold){
   below_threshold <- sum(mg1_packet_delays > threshold)
@@ -469,12 +451,10 @@ for(i in 1:n_trials){
   if (get_n_trial_convergence(all_average_penalties, i, conv_num, convergence_threshold)) {
     break
   }
-  
 }
-
 ```
-## Results
 
+## Results
 ```{r}
 average_rewards <- penalties/counts
 cat("Counts of selections for each path:", counts, "\n")

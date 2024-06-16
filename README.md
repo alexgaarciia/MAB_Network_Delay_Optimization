@@ -8,9 +8,9 @@ The repository includes simulation scripts for different network topologies, suc
 ### Topology Scenarios and Test Cases:
 The following files provide specific scenarios and test cases for different topologies:
 
-- **test_bandit_algorithm.R**, **test_bandit_algorithm.Rmd**: These files are for optimizing network delays using bandit algorithms within the Tokyo topology.
-- **milano_topology.R**, **milano_topology.Rmd**: These files are used to solve and analyze the Milano-based topology scenario.
-
+- **Tokyo_MAB.Rmd**: These files are used to solve and analyze the Tokyo-based topology scenario. The corresponding report is provided in **Tokyo_MAB.pdf**.
+- **Milano_MAB.Rmd**: These files are used to solve and analyze the Milano-based topology scenario. The corresponding report is provided in **Milano_MAB.pdf**.
+ 
 ### Datasets:
 The following datasets are available in the `input_files` folder:
 

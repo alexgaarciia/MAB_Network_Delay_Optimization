@@ -365,18 +365,23 @@ df$best_paths_real <- best_paths_real_df$value
 # and the black square highlights the real best path.
 
 # Plot with ggplot2
-ggplot(df, aes(HL4s, HL2s)) +
+p <- ggplot(df, aes(HL4s, HL2s)) +
   geom_tile(aes(fill = delay * 1e6)) +
   geom_text(aes(label = round(delay * 1e6, 1))) +
   scale_fill_gradient(low = "white", high = "gray20") +
-  geom_tile(data = subset(df, best_paths_v1), color = "red", linewidth = 3, fill = NA)+
-  geom_tile(data = subset(df, best_paths_v2), color = "blue", linewidth = 2, fill = NA)+
-  geom_tile(data = subset(df, best_paths_real), color = "black", linewidth = 1, fill = NA) +
-  guides(fill=guide_legend(title="Delay, us"))+
+  geom_tile(data = subset(df, best_paths_v1), aes(color = "5% Error"), linewidth = 3, fill = NA) +
+  geom_tile(data = subset(df, best_paths_v2), aes(color = "1% Error"), linewidth = 2, fill = NA) +
+  geom_tile(data = subset(df, best_paths_real), aes(color = "Real Best Path"), linewidth = 1, fill = NA) +
+  guides(fill = guide_legend(title = "Delay, us")) +
   scale_x_continuous(breaks = seq(1, length(local_nodes), 1)) +
-  scale_y_continuous(breaks = seq(1, length(national_nodes), 1))
+  scale_y_continuous(breaks = seq(1, length(national_nodes), 1)) +
+  scale_color_manual(
+    name = "Paths",
+    values = c("5% Error" = "red", "1% Error" = "blue", "Real Best Path" = "black")
+  )
 
-
+# Display the plot
+print(p)
 
 ################################################################################
 #                       MAB performance 

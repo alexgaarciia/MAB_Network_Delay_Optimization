@@ -338,7 +338,7 @@ cat("N trials for", convergence_thresholds[2], "%: ", mean(n_trial_convergence_v
 # The heatmap represents the average delay values between each pair of HL4 and HL2 nodes. The heatmap uses a color scale, where darker shades represent higher delays, and lighter shades represent lower delays. The chosen paths chosen are highlighted in frames with different convergence thresholds (5% and 1%) and the real best paths.
 df <- melt(real_delays)
 
-colnames(df) <- c("HL2s", "HL4s", "delay" )
+colnames(df) <- c("HL3s", "HL4s", "delay" )
 # Create a matrix of TRUE/FALSE values
 best_paths_v1_matrix <- matrix(FALSE, nrow = length(regional_nodes), ncol = length(best_paths_v1))
 # Set the corresponding position in the matrix to TRUE for each number
@@ -363,7 +363,7 @@ best_paths_real_matrix[cbind(best_paths_real, 1:length(best_paths_real))] <- TRU
 best_paths_real_df <- melt(best_paths_real_matrix)
 df$best_paths_real <- best_paths_real_df$value
 
-# ggplot(df, aes(HL4s, HL2s)) +
+# ggplot(df, aes(HL4s, HL3s)) +
 #   geom_tile(aes(fill = delay*1e6)) +
 #   geom_text(aes(label = round(delay*1e6 , 1))) +
 #   scale_fill_gradient(low = "white", high = "gray10")
@@ -375,7 +375,7 @@ df$best_paths_real <- best_paths_real_df$value
 # and the black square highlights the real best path.
 
 
-p <- ggplot(df, aes(HL4s, HL2s)) +
+p <- ggplot(df, aes(HL4s, HL3s)) +
   geom_tile(aes(fill = delay * 1e6)) +
   geom_text(aes(label = round(delay * 1e6, 1), fontface = ifelse(best_paths_real, "bold", "plain"))) +
   scale_fill_gradient(low = "white", high = "gray30") +

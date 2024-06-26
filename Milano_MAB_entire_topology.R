@@ -2,6 +2,8 @@
 # "reward." Since bandit algorithms maximize reward, minimizing negative delay
 # achieves the same.
 
+
+
 ################################################################################
 #                       Libraries
 ################################################################################
@@ -11,6 +13,8 @@ library(igraph)
 library(simmer)
 library(reshape2)
 library(ggplot2)
+
+
 
 ################################################################################
 #                       Functions
@@ -145,6 +149,7 @@ get_n_trial_convergence <- function(all_average_rewards, i_trial, conv_num, conv
 }
 
 
+
 ################################################################################
 #                       Definition of basic parameters
 ################################################################################
@@ -163,10 +168,12 @@ N = sum(PS_size*PS_weights)
 #link capacity
 Capacity_Gbps = 10 #Gbps 
 Load = 0.8 
+
+
+
 ################################################################################
 #                       Topology loading
 ################################################################################
-
 
 topology_name = "Milano"
 file_name_v2 <- "input_files/Metro_topology_full_Milano_v3.xlsx"
@@ -212,6 +219,9 @@ legend("topright",
        bty = "n", 
        cex = 1.5, 
        pt.cex = 2)
+
+
+
 ################################################################################
 #                       Simulation of entire topology
 ################################################################################
@@ -257,7 +267,6 @@ MAB_algorithm_av_delays <- function(mg1_packets, arms, conv_num, convergence_thr
 }
 
 
-
 ## Obtaining the best path with different convergence thresholds
 # MAB algorithm obtains with different convergence thresholds, $5\%$ and $1\%$, to identify the best paths. The convergence threshold determines the maximum allowed variance between the current average rewards (negative delays) and the mean of the previous n (see below 25) average rewards. If the variance falls below the threshold, the system is considered converged, and the algorithm terminates.
 
@@ -295,8 +304,9 @@ for (hl4 in local_nodes) {
   n_trial_convergence_v2[n] <- n_trial_convergence
   best_paths_real[n] <- which.min(real_delays[,n])
   n = n + 1
-  
 }
+
+
 
 ################################################################################
 #                       Results
@@ -316,6 +326,8 @@ for (i in 1:length(local_nodes)) {
 cat("N trials for", convergence_thresholds[1], "%: ", mean(n_trial_convergence_v1))
 cat("N trials for", convergence_thresholds[2], "%: ", mean(n_trial_convergence_v2))
 
+
+
 ################################################################################
 #                       Heatmap plot
 ################################################################################
@@ -323,9 +335,6 @@ cat("N trials for", convergence_thresholds[2], "%: ", mean(n_trial_convergence_v
 ## Plotting the heatmaps
 
 # The heatmap represents the average delay values between each pair of HL4 and HL2 nodes. The heatmap uses a color scale, where darker shades represent higher delays, and lighter shades represent lower delays. The chosen paths chosen are highlighted in frames with different convergence thresholds (5% and 1%) and the real best paths.
-
-
-
 df <- melt(real_delays)
 
 colnames(df) <- c("HL2s", "HL4s", "delay" )
@@ -365,23 +374,37 @@ df$best_paths_real <- best_paths_real_df$value
 # and the black square highlights the real best path.
 
 # Plot with ggplot2
+#library(gridExtra)
+#library(grid)
 p <- ggplot(df, aes(HL4s, HL2s)) +
   geom_tile(aes(fill = delay * 1e6)) +
-  geom_text(aes(label = round(delay * 1e6, 1))) +
+  geom_text(aes(label = round(delay * 1e6, 1), fontface = ifelse(best_paths_real, "bold", "plain"))) +
   scale_fill_gradient(low = "white", high = "gray20") +
   geom_tile(data = subset(df, best_paths_v1), aes(color = "5% Error"), linewidth = 3, fill = NA) +
   geom_tile(data = subset(df, best_paths_v2), aes(color = "1% Error"), linewidth = 2, fill = NA) +
-  geom_tile(data = subset(df, best_paths_real), aes(color = "Real Best Path"), linewidth = 1, fill = NA) +
   guides(fill = guide_legend(title = "Delay, us")) +
   scale_x_continuous(breaks = seq(1, length(local_nodes), 1)) +
   scale_y_continuous(breaks = seq(1, length(national_nodes), 1)) +
   scale_color_manual(
     name = "Paths",
-    values = c("5% Error" = "red", "1% Error" = "blue", "Real Best Path" = "black")
+    values = c("5% Error" = "red", "1% Error" = "blue")
+  ) +
+  theme(
+    legend.position = "right",
+    legend.box = "vertical"
   )
+
+# Create the comment text grob
+#comment_grob <- textGrob("Bold: Real Best Path", x = unit(0.5, "npc"), y = unit(0.5, "npc"), 
+#                         hjust = 1.35, vjust = 12, gp = gpar(fontsize = 10, fontface = "bold"))
+
+# Combine the plot and the comment using grid.arrange
+#grid.arrange(ggplotGrob(p), comment_grob, ncol = 2, widths = c(8, 1))
 
 # Display the plot
 print(p)
+
+
 
 ################################################################################
 #                       MAB performance 
@@ -392,6 +415,4 @@ print(p)
 
 cat("Average Number of convergence threshold ", convergence_thresholds[1],"% average error:", sum(best_paths_v1 != best_paths_real)/length(best_paths_v1)*100, "%\n")
 cat("Average Number of convergence threshold ", convergence_thresholds[2],"% average error:", sum(best_paths_v2 != best_paths_real)/length(best_paths_v2)*100, "%\n")
-
-
 

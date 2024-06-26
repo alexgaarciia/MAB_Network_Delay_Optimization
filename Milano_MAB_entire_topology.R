@@ -373,22 +373,28 @@ df$best_paths_real <- best_paths_real_df$value
 # the blue square highlights the path chosen with a 1% convergence thresholds,
 # and the black square highlights the real best path.
 
-# Plot with ggplot2
-#library(gridExtra)
-#library(grid)
+
 p <- ggplot(df, aes(HL4s, HL2s)) +
   geom_tile(aes(fill = delay * 1e6)) +
   geom_text(aes(label = round(delay * 1e6, 1), fontface = ifelse(best_paths_real, "bold", "plain"))) +
-  scale_fill_gradient(low = "white", high = "gray20") +
-  geom_tile(data = subset(df, best_paths_v1), aes(color = "5% Error"), linewidth = 3, fill = NA) +
-  geom_tile(data = subset(df, best_paths_v2), aes(color = "1% Error"), linewidth = 2, fill = NA) +
+  scale_fill_gradient(low = "white", high = "gray30") +
+  geom_tile(data = subset(df, best_paths_v1), aes(color = "10% Error"), linewidth = 3, fill = NA) +
+  geom_tile(data = subset(df, best_paths_v2), aes(color = "3% Error"), linewidth = 2, fill = NA) +
   guides(fill = guide_legend(title = "Delay, us")) +
   scale_x_continuous(breaks = seq(1, length(local_nodes), 1)) +
   scale_y_continuous(breaks = seq(1, length(national_nodes), 1)) +
+  scale_discrete_manual(
+    aesthetics = "fontface",
+    values = c("bold", "plain"),
+    name = "Best Path",
+    labels = c(expression(bold("TRUE")), "FALSE")
+  ) +
+  
   scale_color_manual(
     name = "Paths",
-    values = c("5% Error" = "red", "1% Error" = "blue")
+    values = c("10% Error" = "red", "3% Error" = "blue")
   ) +
+
   theme(
     legend.position = "right",
     legend.box = "vertical"

@@ -27,3 +27,8 @@ The heatmaps below represent the average delay values between each pair of HL4 a
 
 - **heatmap_Milano.pdf**: This heatmap shows the average delay values for the Milano topology.
 - **heatmap_Mexico.pdf**: This heatmap displays the average delay values for the Mexico topology.
+
+<p align = "center">
+   <img src="https://github.com/alexgaarciia/MAB_Network_Delay_Optimization/blob/main/heatmaps/heatmap_Milano.png">
+   <img src="https://github.com/alexgaarciia/MAB_Network_Delay_Optimization/blob/main/heatmaps/heatmap_Mexico.png">
+</p>

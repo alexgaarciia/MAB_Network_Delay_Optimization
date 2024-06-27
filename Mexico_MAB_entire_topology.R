@@ -383,7 +383,7 @@ p <- ggplot(df, aes(HL4s, HL3s)) +
   geom_tile(data = subset(df, best_paths_v2), aes(color = "3% Error"), linewidth = 2, fill = NA) +
   guides(fill = guide_legend(title = "Delay, us")) +
   scale_x_continuous(breaks = seq(1, length(local_nodes), 1)) +
-  scale_y_continuous(breaks = seq(1, length(regional_nodes_nodes), 1)) +
+  scale_y_continuous(breaks = seq(1, length(regional_nodes), 1)) +
   scale_discrete_manual(
     aesthetics = "fontface",
     values = c("bold", "plain"),

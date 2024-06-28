@@ -9,8 +9,8 @@ The repository includes simulation scripts for different network topologies, suc
 The following files provide specific scenarios and test cases for different topologies:
 
 - **Tokyo_MAB.Rmd**: This file is used to solve and analyze the Tokyo-based topology scenario. The corresponding report is provided in **Tokyo_MAB.pdf**.
-- **Milan_MAB_entire_topology.R**:
-- **Mexico_MAB_entire_topology.R**:
+- **Milano_MAB_entire_topology.R**: This file is used to solve and analyze the Milano-based topology scenario.
+- **Mexico_MAB_entire_topology.R**: This file is used to solve and analyze the Mexico-based topology scenario.
 
 ### Datasets:
 The following datasets are available in the `input_files` folder:

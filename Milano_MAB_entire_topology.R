@@ -5,7 +5,7 @@
 
 
 ################################################################################
-#                       Libraries
+#                                  Libraries
 ################################################################################
 
 library(readxl)
@@ -17,7 +17,7 @@ library(ggplot2)
 
 
 ################################################################################
-#                       Functions
+#                                  Functions
 ################################################################################
 
 ## `simmer_mg1` function: Simulates an M/G/1 queuing system using the simmer package.
@@ -172,7 +172,7 @@ Load = 0.8
 
 
 ################################################################################
-#                       Topology loading
+#                               Topology loading
 ################################################################################
 
 topology_name = "Milano"
@@ -223,7 +223,7 @@ legend("topright",
 
 
 ################################################################################
-#                       Simulation of entire topology
+#                        Simulation of entire topology
 ################################################################################
 
 # Consider a network topology with multiple hierarchical levels, including HL4 (local) nodes and HL2 (national) nodes. The objective is to determine the optimal paths from each HL4 node to HL2 node that has the lowest the end-to-end delay.
@@ -309,7 +309,7 @@ for (hl4 in local_nodes) {
 
 
 ################################################################################
-#                       Results
+#                                  Results
 ################################################################################
 
 ## Printing the results
@@ -329,7 +329,7 @@ cat("N trials for", convergence_thresholds[2], "%: ", mean(n_trial_convergence_v
 
 
 ################################################################################
-#                       Heatmap plot
+#                                 Heatmap plot
 ################################################################################
 
 ## Plotting the heatmaps
@@ -413,12 +413,10 @@ print(p)
 
 
 ################################################################################
-#                       MAB performance 
+#                                MAB performance 
 ################################################################################
 
 # The average number of errors, which represents the percentage of cases where the best path chosen by MAB algorithm does not match the true best path determined through the simulations.
-
-
 cat("Average Number of convergence threshold ", convergence_thresholds[1],"% average error:", sum(best_paths_v1 != best_paths_real)/length(best_paths_v1)*100, "%\n")
 cat("Average Number of convergence threshold ", convergence_thresholds[2],"% average error:", sum(best_paths_v2 != best_paths_real)/length(best_paths_v2)*100, "%\n")
 

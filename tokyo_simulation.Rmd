@@ -66,7 +66,7 @@ simmer_mg1 <- function(g, Capacity_Gbps, Load, PS_size, PS_weights, k_num, path_
   theor_qeueu_delay_link_mg1 <- mu * Load / (1 - Load) * (1 + Cs2) / 2 + mu
   theor_qeueu_delay_mg1 <- theor_qeueu_delay_link_mg1*length(path_e)
   # Calculate theoretical propagation delay for each link in the path
-  theor_prop_delay_link_mg1 <- 5e-6 * E(g)$Distance[path_e]
+  theor_prop_delay_link_mg1 <- 5e-6 * E(g)$Distance[path_e]*6
   
   # Print total average delay
   cat("Total theoretical average delay", theor_qeueu_delay_mg1 + sum(theor_prop_delay_link_mg1), "s \n")
@@ -211,7 +211,7 @@ V(g)$color[regional_nodes] <- "yellow"
 deg <- degree(g, mode="all")
 V(g)$size <- deg*1.5
 l <- layout_nicely(g)
-set.seed(321)
+set.seed(24) #321,24
 
 # Get edge ids for each path
 path1_e <- sapply(2:length(path1_v), function(i) {
@@ -229,6 +229,8 @@ path4_e <- sapply(2:length(path4_v), function(i) {
 
 E(g)$color <- "gray"
 E(g)$color[c(path1_e,path2_e,path3_e,path4_e)] <- "red"
+E(g)$width <- 1
+E(g)$width[c(path1_e, path2_e, path3_e, path4_e)] <- 2  # You can adjust the width to your desired thickness
 
 plot(g, edge.arrow.size=.3, vertex.label = V(g)$name, edge.curved=.5, layout=l)
 ```
@@ -263,29 +265,44 @@ cat("Total simulated average delay path4", mean(mg1_packets_path4), "s \n")
 
 ```{r echo=FALSE}
 # Calculate maximum density value across all paths
-max_y <- max(max(density(mg1_packets_path1)$y),
-                   max(density(mg1_packets_path2)$y),
-                   max(density(mg1_packets_path3)$y),
-                   max(density(mg1_packets_path4)$y))
-max_x <- max(max(density(mg1_packets_path1)$x),
-                   max(density(mg1_packets_path2)$x),
-                   max(density(mg1_packets_path3)$x),
-                   max(density(mg1_packets_path4)$x))
+mg1_packets_path1 = mg1_packets_path1 * 1e6
+mg1_packets_path2 = mg1_packets_path2 * 1e6
+mg1_packets_path3 = mg1_packets_path3 * 1e6
+mg1_packets_path4 = mg1_packets_path4 * 1e6
 
-# Plot densities for each path with adapted axis limits
-plot(density(mg1_packets_path1), col = rgb(1, 0, 0, 0.5), lty = 2, lwd = 2, xlim = c(0, max_x), ylim = c(0, max_y), main = "PDF M/G/1")
-lines(density(mg1_packets_path2), col = rgb(0, 1, 0, 0.5), lty = 2, lwd = 2)
-lines(density(mg1_packets_path3), col = rgb(0, 0, 1, 0.5), lty = 2, lwd = 2)
-lines(density(mg1_packets_path4), col = rgb(0.5, 0, 0.5, 0.5), lty = 2, lwd = 2)
+# Calculate maximum density value across all paths
+max_y <- max(max(density(mg1_packets_path1)$y),
+             max(density(mg1_packets_path2)$y),
+             max(density(mg1_packets_path3)$y),
+             max(density(mg1_packets_path4)$y))
+max_x <- max(max(density(mg1_packets_path1)$x),
+             max(density(mg1_packets_path2)$x),
+             max(density(mg1_packets_path3)$x),
+             max(density(mg1_packets_path4)$x))
+
+# Plot densities for each path with adapted axis limits and x-axis label
+plot(density(mg1_packets_path1), col = rgb(1, 0, 0, 0.5), lty = 2, lwd = 3, 
+     xlim = c(0, max_x), ylim = c(0, max_y), xlab = "Latency (us)", main = "")
+
+lines(density(mg1_packets_path2), col = rgb(0, 1, 0, 0.5), lty = 2, lwd = 3)
+lines(density(mg1_packets_path3), col = rgb(0, 0, 1, 0.5), lty = 2, lwd = 3)
+lines(density(mg1_packets_path4), col = rgb(0.5, 0, 0.5, 0.5), lty = 2, lwd = 3)
 
 # Add legends for each component
 legend("topright", legend=c("Path 1", "Path 2", "Path 3", "Path 4"),
        col=c(rgb(1, 0, 0, 0.5), rgb(0, 1, 0, 0.5), rgb(0, 0, 1, 0.5), rgb(0.5, 0, 0.5, 0.5)),
-       lty=c(2, 2, 2, 2), lwd=c(2, 2, 2, 2), inset = c(0.01, 0.01), xpd = TRUE)
+       lty=c(2, 2, 2, 2), lwd=c(3, 3, 3, 3), inset = c(0.01, 0.01), xpd = TRUE)
 
 # Reset to a single plot
 par(mfrow=c(1, 1))
 grid()
+
+# Reset packet values to original scale
+mg1_packets_path1 = mg1_packets_path1 / 1e6
+mg1_packets_path2 = mg1_packets_path2 / 1e6
+mg1_packets_path3 = mg1_packets_path3 / 1e6
+mg1_packets_path4 = mg1_packets_path4 / 1e6
+
 ```
 
 
@@ -304,6 +321,7 @@ rewards <- numeric(arms) # A vector initialized with zeros to accumulate the tot
 - `converged`: This variable is a boolean flag that indicates whether the system has converged or not.
 
 ```{r echo=TRUE}
+
 converged_at_trial <- 0
 conv_num <- 5
 convergence_threshold <- 1 #%
@@ -353,40 +371,53 @@ cat("The best path is: Path", which.max(average_rewards), "\n")
 # Simulation for the percentiles
 ## Checking if e2e delay is below the given threshold
 
-$T_{\text{threshold}}$ = 25 ms 
+$T_{\text{threshold}}$ = 100 us 
 
  \[ \begin{cases} Delay > T_{\text{threshold}}, \text{reward} = -1\\ \quad Delay < T_{\text{threshold}}, \text{reward} = 0  \end{cases} \]
 ```{r}
-threshold = 2.5e-5 #s
+threshold = 1e-4 #s
+set.seed(42)
 ```
  
  
 ```{r echo=FALSE}
+
+mg1_packets_path1 = mg1_packets_path1 * 1e6
+mg1_packets_path2 = mg1_packets_path2 * 1e6
+mg1_packets_path3 = mg1_packets_path3 * 1e6
+mg1_packets_path4 = mg1_packets_path4 * 1e6
+
 # Calculate maximum density value across all paths
 max_y <- max(max(density(mg1_packets_path1)$y),
-                   max(density(mg1_packets_path2)$y),
-                   max(density(mg1_packets_path3)$y),
-                   max(density(mg1_packets_path4)$y))
+             max(density(mg1_packets_path2)$y),
+             max(density(mg1_packets_path3)$y),
+             max(density(mg1_packets_path4)$y))
 max_x <- max(max(density(mg1_packets_path1)$x),
-                   max(density(mg1_packets_path2)$x),
-                   max(density(mg1_packets_path3)$x),
-                   max(density(mg1_packets_path4)$x))
+             max(density(mg1_packets_path2)$x),
+             max(density(mg1_packets_path3)$x),
+             max(density(mg1_packets_path4)$x))
 
 # Plot densities for each path with adapted axis limits
-plot(density(mg1_packets_path1), col = rgb(1, 0, 0, 0.5), lty = 2, lwd = 2, xlim = c(0, max_x), ylim = c(0, max_y), main = "")
-lines(density(mg1_packets_path2), col = rgb(0, 1, 0, 0.5), lty = 2, lwd = 2)
-lines(density(mg1_packets_path3), col = rgb(0, 0, 1, 0.5), lty = 2, lwd = 2)
-lines(density(mg1_packets_path4), col = rgb(0.5, 0, 0.5, 0.5), lty = 2, lwd = 2)
-abline(v = threshold, col = "black", lty = 1, lwd = 1)
+plot(density(mg1_packets_path1), col = rgb(1, 0, 0, 0.5), lty = 2, lwd = 3, xlim = c(0, max_x), ylim = c(0, max_y), xlab = "Latency (us)", main = "")
+lines(density(mg1_packets_path2), col = rgb(0, 1, 0, 0.5), lty = 2, lwd = 3)
+lines(density(mg1_packets_path3), col = rgb(0, 0, 1, 0.5), lty = 2, lwd = 3)
+lines(density(mg1_packets_path4), col = rgb(0.5, 0, 0.5, 0.5), lty = 2, lwd = 3)
+abline(v = threshold*1e6, col = "black", lty = 1, lwd = 2)
 
 # Add legends for each component
-legend("topright", legend=c("Path 1", "Path 2", "Path 3", "Path 4", expression(T[threshold])),
-       col=c(rgb(1, 0, 0, 0.5), rgb(0, 1, 0, 0.5), rgb(0, 0, 1, 0.5), rgb(0.5, 0, 0.5, 0.5),"black"),
-       lty=c(2, 2, 2, 2, 1), lwd=c(2, 2, 2, 2,1), inset = c(0.01, 0.01), xpd = TRUE)
+legend("topleft", legend=c("Path 1", "Path 2", "Path 3", "Path 4", expression(T[thres])),
+       col=c(rgb(1, 0, 0, 0.5), rgb(0, 1, 0, 0.5), rgb(0, 0, 1, 0.5), rgb(0.5, 0, 0.5, 0.5), "black"),
+       lty=c(2, 2, 2, 2, 1), lwd=c(3, 3, 3, 3, 3), inset = c(0.01, 0.01), xpd = TRUE)
 
 # Reset to a single plot
 par(mfrow=c(1, 1))
 grid()
+
+mg1_packets_path1 = mg1_packets_path1 / 1e6
+mg1_packets_path2 = mg1_packets_path2 / 1e6
+mg1_packets_path3 = mg1_packets_path3 / 1e6
+mg1_packets_path4 = mg1_packets_path4 / 1e6
+
 ```
 
 Percent above threshold for entire population:
@@ -399,6 +430,7 @@ theor_perc <- function(mg1_packet_delays, threshold){
 }
 
 ```
+
 ```{r}
 print(paste("Percentage above threshold theoretical:", theor_perc(mg1_packets_path1, threshold), "%"))
 print(paste("Percentage above threshold theoretical:", theor_perc(mg1_packets_path2, threshold), "%"))

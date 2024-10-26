@@ -199,24 +199,22 @@ max_x <- max(max(density(mg1_packets_path1)$x),
              max(density(mg1_packets_path3)$x),
              max(density(mg1_packets_path4)$x))
 
-# Plot densities for each path with adapted axis limits and x-axis label
-plot(density(mg1_packets_path1), col = rgb(1, 0, 0, 0.5), lty = 2, lwd = 3, 
-     xlim = c(0, max_x), ylim = c(0, max_y), xlab = "Latency (us)", main = "")
-
+# Plot densities for each path with adapted axis limits
+plot(density(mg1_packets_path1), col = rgb(1, 0, 0, 0.5), lty = 2, lwd = 3, xlim = c(0, max_x), ylim = c(0, max_y), xlab = "Latency (us)", main = "")
 lines(density(mg1_packets_path2), col = rgb(0, 1, 0, 0.5), lty = 2, lwd = 3)
 lines(density(mg1_packets_path3), col = rgb(0, 0, 1, 0.5), lty = 2, lwd = 3)
 lines(density(mg1_packets_path4), col = rgb(0.5, 0, 0.5, 0.5), lty = 2, lwd = 3)
+abline(v = threshold*1e6, col = "black", lty = 1, lwd = 2)
 
 # Add legends for each component
-legend("topright", legend=c("Path 1", "Path 2", "Path 3", "Path 4"),
-       col=c(rgb(1, 0, 0, 0.5), rgb(0, 1, 0, 0.5), rgb(0, 0, 1, 0.5), rgb(0.5, 0, 0.5, 0.5)),
-       lty=c(2, 2, 2, 2), lwd=c(3, 3, 3, 3), inset = c(0.01, 0.01), xpd = TRUE)
+legend("topleft", legend=c("Path 1", "Path 2", "Path 3", "Path 4", expression(T[thres])),
+       col=c(rgb(1, 0, 0, 0.5), rgb(0, 1, 0, 0.5), rgb(0, 0, 1, 0.5), rgb(0.5, 0, 0.5, 0.5), "black"),
+       lty=c(2, 2, 2, 2, 1), lwd=c(3, 3, 3, 3, 3), inset = c(0.01, 0.01), xpd = TRUE)
 
 # Reset to a single plot
 par(mfrow=c(1, 1))
 grid()
 
-# Reset packet values to original scale
 mg1_packets_path1 = mg1_packets_path1 / 1e6
 mg1_packets_path2 = mg1_packets_path2 / 1e6
 mg1_packets_path3 = mg1_packets_path3 / 1e6
@@ -280,11 +278,63 @@ for (test in 1:tests){
   }
 }
 
-prob_opt_path_selected_elipson_greedy <- prob_opt_path_selected/100
+prob_opt_path_selected_elipson_greedy_Basic <- prob_opt_path_selected/100
+
+################################################################################
+#                                  Test 2 Decaying Epsilon Greedy
+################################################################################
+
+counts <- numeric(arms) # A vector initialized with zeros to track how many times each path has been selected
+rewards <- numeric(arms) # A vector initialized with zeros to accumulate the total rewards (negative delays) obtained from each path
+
+
+prob_opt_path_selected <- rep(0, n_trials)
+
+for (test in 1:tests){
+  all_average_penalties <- list() 
+  counts <- numeric(arms)
+  penalties <- numeric(arms)
+  for(i in 1:n_trials){
+    # Decide to explore or exploit
+    epsilon <- 1/sqrt(i)
+    if(runif(1) < epsilon){
+      # Exploration: choose a random path
+      chosen_arm <- sample(arms, 1)
+    } else {
+      # Exploitation: choose the best path based on average penalty
+      average_penalties <- penalties/pmax(counts, 1)
+      chosen_arm <- which.max(average_penalties)
+    }
+    
+    # Simulate the delay (penalty) from the chosen path
+    delay <- switch(chosen_arm,
+                    sample(mg1_packets_path1,1),
+                    sample(mg1_packets_path2,1),
+                    sample(mg1_packets_path3,1),
+                    sample(mg1_packets_path4,1)) 
+    
+    # Update counts and penalties
+    penalty = -ifelse(delay > threshold, 1, 0)
+    counts[chosen_arm] <- counts[chosen_arm] + 1
+    penalties[chosen_arm] <- penalties[chosen_arm] + penalty
+    
+    all_average_penalties[[i]] <- penalties/counts
+    # cat("Counts of selections for each path:", counts, "\n")
+    # cat("Average rewards (negative delay) for each path:", average_rewards, "\n")
+    # cat("The best path is: Path", which.max(average_rewards), "\n")
+    if (optimal_path == which.max(penalties/counts)){
+      
+      prob_opt_path_selected[i] <- prob_opt_path_selected[i] + 1
+    }
+    
+  }
+}
+
+prob_opt_path_selected_elipson_greedy_Decaying <- prob_opt_path_selected/100
 
 
 ################################################################################
-#                                  Test 2  Thompson Sampling
+#                                  Test 3  Thompson Sampling
 ################################################################################
 
 
@@ -360,7 +410,7 @@ prob_opt_path_selected_Thompson <- prob_opt_path_selected/100
 
 
 ################################################################################
-#                                  Test 3 EXP3
+#                                  Test 4 EXP3
 ################################################################################
 
 
@@ -421,14 +471,15 @@ prob_opt_path_selected_exp3 <- prob_opt_path_selected/100
 x <-3:n_trials
 
 
-plot(x, prob_opt_path_selected_elipson_greedy[3:n_trials], type = "l", col = "blue", lwd = 2,
+plot(x, prob_opt_path_selected_elipson_greedy_Basic[3:n_trials], type = "l", col = "blue", lwd = 2,
      ylim = c(0, 100), xlab = "Trials", ylab = "Probability of Optimal Path Selection in 10k times",
      main = "Comparison of MAB Algorithms")
 lines(x, prob_opt_path_selected_Thompson[3:n_trials], col = "green", lwd = 2)
 lines(x, prob_opt_path_selected_exp3[3:n_trials], col = "red", lwd = 2)
+lines(x, prob_opt_path_selected_elipson_greedy_Decaying[3:n_trials], col = "gray", lwd = 2)
 
 # Add legend
-legend("bottomright", legend = c("Epsilon-Greedy", "Thompson", "EXP3"),
-       col = c("blue", "green", "red"), lty = 1, lwd = 2)
+legend("bottomright", legend = c("Epsilon-Greedy","Decaying Epsilon", "Thompson", "EXP3"),
+       col = c("blue", "gray","green", "red"), lty = 1, lwd = 2)
 grid()
 

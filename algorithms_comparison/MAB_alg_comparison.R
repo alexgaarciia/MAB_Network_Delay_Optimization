@@ -102,7 +102,6 @@ path4_v = c(11, 9, 3, 2, 8, 7)
 arms = 4 # 4 paths
 
 n_trials <- 10000 # Number of trials
-epsilon <- 0.7 # Exploration rate
 
 PS_size=c((64+127)/2,(128+255)/2,(256+511)/2, (512+1023)/2, (1024+1513)/2, 1514, (1515+9100)/2)
 PS_weights=c(33.2/100, 5.4/100, 3.3/100, 3.7/100, 34.6/100, 14.6/100, 5.2/100)
@@ -234,6 +233,7 @@ optimal_path = 3
 ################################################################################
 
 
+epsilon <- 0.7 # Exploration rate
 
 counts <- numeric(arms) # A vector initialized with zeros to track how many times each path has been selected
 rewards <- numeric(arms) # A vector initialized with zeros to accumulate the total rewards (negative delays) obtained from each path
@@ -285,12 +285,74 @@ for (test in 1:tests){
   }
 }
 
-prob_opt_path_selected_Epsilon_greedy <- prob_opt_path_selected/100
+prob_opt_path_selected_Epsilon_greedy_Basic <- prob_opt_path_selected/100
+
+
+################################################################################
+#                                  Test 2 Decaying Epsilon Greedy
+################################################################################
+
+
+
+counts <- numeric(arms) # A vector initialized with zeros to track how many times each path has been selected
+rewards <- numeric(arms) # A vector initialized with zeros to accumulate the total rewards (negative delays) obtained from each path
+
+
+prob_opt_path_selected <- rep(0, n_trials)
+
+for (test in 1:tests){
+  all_average_rewards <- list() 
+  counts <- numeric(arms)
+  rewards <- numeric(arms)
+  epsilon <- 1 # Exploration rate
+  
+  for(i in 1:n_trials){
+    # Decide to explore or exploit
+    epsilon <- 1/sqrt(i)
+    if(runif(1) < epsilon){
+      # Exploration: choose a random path
+      chosen_arm <- sample(arms, 1)
+    } else {
+      # Exploitation: choose the best path based on average reward
+      #average_rewards <- rewards/pmax(counts, 1)
+      average_rewards <- rewards/pmax(counts, 1)
+      chosen_arm <- which.max(average_rewards)
+    }
+    
+    # Simulate the delay (reward) from the chosen path
+    reward <- -switch(chosen_arm,
+                      sample(mg1_packets_path1,1),
+                      sample(mg1_packets_path2,1),
+                      sample(mg1_packets_path3,1),
+                      sample(mg1_packets_path4,1)) #-rnorm(1, mu[chosen_arm], sigma[chosen_arm])
+    
+    # Update counts and rewards
+    counts[chosen_arm] <- counts[chosen_arm] + 1
+    rewards[chosen_arm] <- rewards[chosen_arm] + reward
+    
+    all_average_rewards[[i]] <- rewards/counts
+    
+    
+    
+    average_rewards <- rewards/counts
+    # cat("Counts of selections for each path:", counts, "\n")
+    # cat("Average rewards (negative delay) for each path:", average_rewards, "\n")
+    # cat("The best path is: Path", which.max(average_rewards), "\n")
+    if (optimal_path == which.max(average_rewards)){
+      
+      prob_opt_path_selected[i] <- prob_opt_path_selected[i] + 1
+    }
+    
+    
+  }
+}
+
+prob_opt_path_selected_Epsilon_greedy_Decaying <- prob_opt_path_selected/100
 
 
 
 ################################################################################
-#                                  Test 2 Upper Confidence Bound (UCB1)
+#                                  Test 3 Upper Confidence Bound (UCB1)
 ################################################################################
 
 
@@ -363,7 +425,7 @@ prob_opt_path_selected_ucb1 <- prob_opt_path_selected/100
 
 
 ################################################################################
-#                                  Test 3 Softmax
+#                                  Test 4 Softmax
 ################################################################################
 
 
@@ -421,14 +483,15 @@ prob_opt_path_selected_Softmax <- prob_opt_path_selected/100
 x <- 3:n_trials
 
 
-plot(x, prob_opt_path_selected_Epsilon_greedy[3:n_trials], type = "l", col = "blue", lwd = 2,
+plot(x, prob_opt_path_selected_Epsilon_greedy_Basic[3:n_trials], type = "l", col = "blue", lwd = 2,
      ylim = c(0, 100), xlab = "Trials", ylab = "Probability of Optimal Path Selection in 10k times",
      main = "Comparison of MAB Algorithms")
 lines(x, prob_opt_path_selected_ucb1[3:n_trials], col = "green", lwd = 2)
 lines(x, prob_opt_path_selected_Softmax[3:n_trials], col = "red", lwd = 2)
+lines(x, prob_opt_path_selected_Epsilon_greedy_Decaying[3:n_trials], col = "gray", lwd = 2)
 
 # Add legend
-legend("bottomright", legend = c("Epsilon-Greedy", "UCB1", "Softmax"),
-       col = c("blue", "green", "red"), lty = 1, lwd = 2)
+legend("bottomright", legend = c("Basic Epsilon","Decaying Epsilon", "UCB1", "Softmax"),
+       col = c("blue","gray", "green", "red"), lty = 1, lwd = 2)
 grid()
 

@@ -1,0 +1,1011 @@
+---
+title: "MAB_alg_comparison"
+date: "2024-10-22"
+output:
+  pdf_document: 
+    latex_engine: xelatex # or pdflatex with packages, as needed
+  html_document: default
+  word_document: default
+---
+
+# Comparing Multi-Armed Bandit Algorithms for Optimal Reward Selection in Time-Sensitive Networking
+Multi-Armed Bandit (MAB) problems are a class of sequential decision-making problems where an agent aims to maximize cumulative rewards by selecting among multiple choices (arms). This document explores and compares several commonly used MAB algorithms.
+
+**Objective**: To understand and compare the performance of various MAB algorithms using simulated data. Each algorithm will be implemented, and results will be compared to observe differences in exploration-exploitation strategies.
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+library(readxl)
+library(igraph)
+library(simmer)
+```
+
+# Functions
+## `simmer_mg1` function: Simulates an M/G/1 queuing system using the simmer package.
+
+Parameters:
+
+ - `g`: Graph object representing the network topology.
+ 
+ - `Capacity_Gbps`: Capacity of the links in Gbps.
+ 
+ - `Load`: Load of the system.
+ 
+ - `PS_size`: Packet sizes.
+ 
+ - `PS_weights`: Weights of packet sizes.
+ 
+ - `k_num`: Number of packets to simulate.
+ 
+ - `path_v`: Vector representing the path in the network.
+ 
+ Returns:
+ 
+ - Vector of spending times for the specified number of packets.
+```{r}
+simmer_mg1 <- function(g, Capacity_Gbps, Load, PS_size, PS_weights, k_num, path_v, distance_n_times = 1){
+  
+  # Calculate total number of packets in the system
+  N = sum(PS_size * PS_weights)
+  
+  # Calculate node capacity in Bps
+  nodes_capacity_Bps = Capacity_Gbps * 1e9
+  
+  # Get edge IDs for the given path
+  path_e <- sapply(2:length(path_v), function(i) {
+    get.edge.ids(g, as.vector(c(path_v[i-1], path_v[i])))
+  })
+  
+  # Calculate capacity per packet in Bps
+  Capacity_ps = Capacity_Gbps * 1e9 / (8 * N)
+  
+  # Calculate traffic per packet in Bps
+  traffic_ps = Capacity_ps * Load
+  
+  # Calculate service rate
+  mu = 1 / Capacity_ps
+  
+  # Calculate variance of the number of packets in the system
+  var_N <- sum(PS_size^2 * PS_weights) - N^2
+  Cs2 <- var_N / (N^2)
+  
+  # Calculate theoretical queue delay for each link in the path
+  theor_qeueu_delay_link_mg1 <- mu * Load / (1 - Load) * (1 + Cs2) / 2 + mu
+  theor_qeueu_delay_mg1 <- theor_qeueu_delay_link_mg1*length(path_e)
+  # Calculate theoretical propagation delay for each link in the path
+  theor_prop_delay_link_mg1 <- 5e-6 * E(g)$Distance[path_e]*distance_n_times
+  
+  # Print total average delay
+  cat("Total theoretical average delay", theor_qeueu_delay_mg1 + sum(theor_prop_delay_link_mg1), "s \n")
+  
+  # Initialize simulation environment
+  env <- simmer()
+  
+  # Add resources for each node in the graph
+  for (i in 1:length(V(g))) {
+    env %>% add_resource(paste0("node_", i), 1) 
+  }  
+  
+  # Create trajectory for each link in the path
+  trajectory_name <- lapply(1:length(path_e), function(i) {
+    trajectory() %>%
+      seize(paste0("node_", path_v[i])) %>%
+      timeout(function() 8 * sample(PS_size, size = 1, replace = TRUE, prob = PS_weights) / nodes_capacity_Bps) %>%
+      release(paste0("node_", path_v[i])) %>%
+      timeout(function() theor_prop_delay_link_mg1[i])
+  }) %>% join()
+  
+  # Define arrival process
+  env %>% add_generator("trajectory_name", trajectory_name, function() rexp(1, traffic_ps))
+  
+  # Run simulation
+  env %>% run(until = (k_num+1e3) / traffic_ps)
+  
+  # Get spending times for all arrivals up to k_num
+  all_arrivals_res <- data.frame(env %>%
+                                   get_mon_arrivals(per_resource = FALSE) %>%
+                                   transform(waiting_time_in_queue = round(end_time - start_time - activity_time)) %>%
+                                   transform(spending_time = end_time - start_time))
+  
+  # Return spending times for k_num arrivals
+  return(all_arrivals_res$spending_time[1:k_num])
+  
+}
+```
+
+## `get_n_trial_convergence` function: Checks convergence based on average rewards.
+
+The convergence criterion is defined as follows:
+
+$$ \text{Err} < \text{threshold} $$
+
+where \(\text{Err} \) is calculated as: 
+$$ \text{Err} = \frac{\sum_{i=1}^{n} |\overline{\text{Reward\_curr}}_i - \overline{\text{Reward\_prev\_n}}_i|}{|\overline{\text{Reward\_prev\_n}}_i|}$$
+
+Here, \( \overline{\text{Reward\_curr}}_{i} \) represents the average rewards for the current trial, and \(\overline{\text{Reward\_prev\_n}}_{i}\) represents the mean of the previous \( n \) average rewards. 
+
+```{r}
+get_n_trial_convergence <- function(all_average_rewards, i_trial, conv_num, convergence_threshold) {
+  
+  # Check if the current trial is less than or equal to the convergence window
+  if (i_trial < conv_num) {
+    return(FALSE)  # Not converged yet
+  }
+  
+  # Retrieve the average rewards for the current trial
+  current_average_rewards <-  ifelse(is.na(all_average_rewards[[i_trial]]), 0, all_average_rewards[[i_trial]])
+  
+  # Retrieve the previous n average rewards (convergence window)
+  prev_n_average_rewards <- all_average_rewards[(i_trial - conv_num):(i_trial - 1)]
+  
+  # Calculate the total sum of the previous n average rewards for each iteration
+  total_sum <- colSums(do.call(rbind, lapply(prev_n_average_rewards, function(x) ifelse(is.na(x), 0, x))))
+  
+  # Calculate the mean of the previous n average rewards
+  prev_n_mean <- total_sum / conv_num
+  
+  # Calculate the error of the current average rewards according the previous n mean
+  error_perc <- sum(abs(current_average_rewards - prev_n_mean))/(abs(sum(prev_n_mean)))*1e2
+  
+  # Check if the error is less than the convergence threshold
+  if (error_perc < convergence_threshold) {
+    cat("Error =", error_perc, "% \n")
+    cat("Converged at trial", i_trial, "\n")  # Print convergence message
+    converged = TRUE
+    cat("Converged:",converged)
+    return(TRUE)  # Converged
+  } else {
+    return(FALSE)  # Not converged yet
+  }
+}
+```
+
+
+# Definition of basic parameters
+```{r warning=FALSE}
+path1_v = c(11, 10, 13, 04) 
+path2_v = c(11, 09, 03, 01)  
+path3_v = c(11, 12, 15, 20, 16)
+path4_v = c(11, 9, 3, 2, 8, 7) 
+arms = 4 # 4 paths
+
+n_trials <- 10000 # Number of trials
+epsilon <- 0.7 # Exploration rate
+
+PS_size=c((64+127)/2,(128+255)/2,(256+511)/2, (512+1023)/2, (1024+1513)/2, 1514, (1515+9100)/2)
+PS_weights=c(33.2/100, 5.4/100, 3.3/100, 3.7/100, 34.6/100, 14.6/100, 5.2/100)
+N = sum(PS_size*PS_weights)
+N
+
+topology_name = "Tokyo"
+file_name_v2 <- "input_files/Metro_topology_full_Tokyo.xlsx"
+nodes_info <- read_excel(file_name_v2, sheet = 1)
+links_info <- read_excel(file_name_v2, sheet = 2)
+```
+# DES Data Simulation
+To make fair comparisons, we will simulate delay-based rewards for four arms/paths.
+# igraph calculations
+```{r echo=FALSE}
+national_nodes <- c()
+regional_nodes <- c()
+
+for (i in seq_along(nodes_info$node_code)) {
+  if (nodes_info$node_code[i] == "HL2") {
+    national_nodes <- c(national_nodes, i)
+  }
+  if (nodes_info$node_code[i] == "HL3") {
+    regional_nodes <- c(regional_nodes, i)
+  }
+}
+
+cat("National nodes:", national_nodes, "\n")
+cat("Regional nodes:", regional_nodes, "\n")
+
+
+# Building the graph:
+g <- graph_from_data_frame(links_info, directed = TRUE, vertices = nodes_info)
+
+##Calculations of the capacity in p/s
+E(g)$Distance <- E(g)$distanceKm
+E(g)$Definition <- paste0(as_edgelist(g)[,1],"->",as_edgelist(g)[,2])
+E(g)$Capacity <- E(g)$capacityGbps*10^9/(8*N)
+
+
+#Plot graph
+V(g)$color <- "gray"
+V(g)$color[national_nodes] <- "red"
+V(g)$color[regional_nodes] <- "yellow"
+
+deg <- degree(g, mode="all")
+V(g)$size <- deg*1.5
+l <- layout_nicely(g)
+set.seed(24) #321,24
+
+# Get edge ids for each path
+path1_e <- sapply(2:length(path1_v), function(i) {
+  get.edge.ids(g, as.vector(c(path1_v[i-1], path1_v[i])))
+  })
+path2_e <- sapply(2:length(path2_v), function(i) {
+  get.edge.ids(g, as.vector(c(path2_v[i-1], path2_v[i])))
+  })
+path3_e <- sapply(2:length(path3_v), function(i) {
+  get.edge.ids(g, as.vector(c(path3_v[i-1], path3_v[i])))
+  })
+path4_e <- sapply(2:length(path4_v), function(i) {
+  get.edge.ids(g, as.vector(c(path4_v[i-1], path4_v[i])))
+  })
+
+E(g)$color <- "gray"
+E(g)$color[c(path1_e,path2_e,path3_e,path4_e)] <- "red"
+E(g)$width <- 1
+E(g)$width[c(path1_e, path2_e, path3_e, path4_e)] <- 2  # You can adjust the width to your desired thickness
+
+plot(g, edge.arrow.size=.3, vertex.label = V(g)$name, edge.curved=.5, layout=l)
+```
+```{r include=FALSE}
+# Print the results
+cat("Edge ids for path1:", path1_e, "\n")
+cat("Edge ids for path2:", path2_e, "\n")
+cat("Edge ids for path3:", path3_e, "\n")
+cat("Edge ids for path4:", path4_e, "\n")
+```
+
+```{r echo=FALSE}
+# Print the results
+cat("Distance for path1:", sum(E(g)$Distance[path1_e]), "km \n")
+cat("Distance for path2:", sum(E(g)$Distance[path2_e]), "km \n")
+cat("Distance for path3:", sum(E(g)$Distance[path3_e]), "km \n")
+cat("Distance for path4:", sum(E(g)$Distance[path4_e]), "km \n")
+
+```
+
+```{r echo=TRUE}
+k_num = n_trials
+mg1_packets_path1 <- simmer_mg1(g, Capacity_Gbps = 10, Load = 0.8, PS_size, PS_weights, k_num, path1_v)
+mg1_packets_path2 <- simmer_mg1(g, Capacity_Gbps = 10, Load = 0.5, PS_size, PS_weights, k_num, path2_v)
+mg1_packets_path3 <- simmer_mg1(g, Capacity_Gbps = 10, Load = 0.4, PS_size, PS_weights, k_num, path3_v)
+mg1_packets_path4 <- simmer_mg1(g, Capacity_Gbps = 10, Load = 0.1, PS_size, PS_weights, k_num, path4_v)
+cat("Total simulated average delay path1", mean(mg1_packets_path1), "s \n")
+cat("Total simulated average delay path2", mean(mg1_packets_path2), "s \n")
+cat("Total simulated average delay path3", mean(mg1_packets_path3), "s \n")
+cat("Total simulated average delay path4", mean(mg1_packets_path4), "s \n")
+```
+
+```{r echo=FALSE}
+# Calculate maximum density value across all paths
+mg1_packets_path1 = mg1_packets_path1 * 1e6
+mg1_packets_path2 = mg1_packets_path2 * 1e6
+mg1_packets_path3 = mg1_packets_path3 * 1e6
+mg1_packets_path4 = mg1_packets_path4 * 1e6
+
+# Calculate maximum density value across all paths
+max_y <- max(max(density(mg1_packets_path1)$y),
+             max(density(mg1_packets_path2)$y),
+             max(density(mg1_packets_path3)$y),
+             max(density(mg1_packets_path4)$y))
+max_x <- max(max(density(mg1_packets_path1)$x),
+             max(density(mg1_packets_path2)$x),
+             max(density(mg1_packets_path3)$x),
+             max(density(mg1_packets_path4)$x))
+
+# Plot densities for each path with adapted axis limits and x-axis label
+plot(density(mg1_packets_path1), col = rgb(1, 0, 0, 0.5), lty = 2, lwd = 3, 
+     xlim = c(0, max_x), ylim = c(0, max_y), xlab = "Latency (us)", main = "")
+
+lines(density(mg1_packets_path2), col = rgb(0, 1, 0, 0.5), lty = 2, lwd = 3)
+lines(density(mg1_packets_path3), col = rgb(0, 0, 1, 0.5), lty = 2, lwd = 3)
+lines(density(mg1_packets_path4), col = rgb(0.5, 0, 0.5, 0.5), lty = 2, lwd = 3)
+
+# Add legends for each component
+legend("topright", legend=c("Path 1", "Path 2", "Path 3", "Path 4"),
+       col=c(rgb(1, 0, 0, 0.5), rgb(0, 1, 0, 0.5), rgb(0, 0, 1, 0.5), rgb(0.5, 0, 0.5, 0.5)),
+       lty=c(2, 2, 2, 2), lwd=c(3, 3, 3, 3), inset = c(0.01, 0.01), xpd = TRUE)
+
+# Reset to a single plot
+par(mfrow=c(1, 1))
+grid()
+
+# Reset packet values to original scale
+mg1_packets_path1 = mg1_packets_path1 / 1e6
+mg1_packets_path2 = mg1_packets_path2 / 1e6
+mg1_packets_path3 = mg1_packets_path3 / 1e6
+mg1_packets_path4 = mg1_packets_path4 / 1e6
+
+```
+
+# Epsilon-Greedy Algorithm
+
+This is a simple and widely used method.
+With probability ε (epsilon) explore (choose a random action).
+With probability 1 - ε, exploit (choose the action with the highest estimated reward so far).
+
+
+## Initialization
+```{r}
+#arms <- length(mu)
+counts <- numeric(arms) # A vector initialized with zeros to track how many times each path has been selected
+rewards <- numeric(arms) # A vector initialized with zeros to accumulate the total rewards (negative delays) obtained from each path
+```
+
+- `conv_num`: This variable represents the number of previous trials used for convergence checking. It specifies the number of previous average rewards to consider when checking for convergence.
+
+- `convergence_threshold`: This variable defines the threshold for convergence, maximum allowed variance between the current average rewards and the mean of the previous `conv_num` average rewards. If the variance falls below this threshold, the system is considered converged.
+
+- `converged`: This variable is a boolean flag that indicates whether the system has converged or not.
+
+```{r echo=TRUE}
+
+converged_at_trial <- 0
+conv_num <- 5
+convergence_threshold <- 1 #%
+all_average_rewards <- list() 
+converged <- FALSE
+
+for(i in 1:n_trials){
+  # Decide to explore or exploit
+  if(runif(1) < epsilon){
+    # Exploration: choose a random path
+    chosen_arm <- sample(arms, 1)
+  } else {
+    # Exploitation: choose the best path based on average reward
+    #average_rewards <- rewards/pmax(counts, 1)
+    average_rewards <- rewards/pmax(counts, 1)
+    chosen_arm <- which.max(average_rewards)
+  }
+  
+  # Simulate the delay (reward) from the chosen path
+  reward <- -switch(chosen_arm,
+                 sample(mg1_packets_path1,1),
+                 sample(mg1_packets_path2,1),
+                 sample(mg1_packets_path3,1),
+                 sample(mg1_packets_path4,1)) #-rnorm(1, mu[chosen_arm], sigma[chosen_arm])
+
+  # Update counts and rewards
+  counts[chosen_arm] <- counts[chosen_arm] + 1
+  rewards[chosen_arm] <- rewards[chosen_arm] + reward
+
+  all_average_rewards[[i]] <- rewards/counts
+  
+  if (get_n_trial_convergence(all_average_rewards, i, conv_num, convergence_threshold)) {
+    break
+  }
+}
+
+# Visualising the results
+barplot(counts,
+     col = 'blue',
+     main = 'Histogram of Paths selections',
+     xlab = 'Paths',
+     ylab = 'Number of times each path was selected')
+```
+
+## Results
+```{r}
+average_rewards <- rewards/counts
+cat("Counts of selections for each path:", counts, "\n")
+cat("Average rewards (negative delay) for each path:", average_rewards, "\n")
+cat("The best path is: Path", which.max(average_rewards), "\n")
+```
+
+
+# Upper Confidence Bound (UCB1)
+
+The Upper Confidence Bound (UCB1) algorithm selects the arm that maximizes an upper confidence bound on the reward, balancing exploration and exploitation. The idea is to select arms with higher estimated rewards, while also favoring arms with less certainty (i.e., those selected fewer times).
+
+For each arm \( k \), the UCB1 algorithm calculates an upper confidence bound \( UCB_k \) at each time step \( t \):
+
+\[
+UCB_k = \hat{\mu}_k + \sqrt{\frac{3 \cdot \ln(t)}{2 * n_k}}
+\]
+
+where:
+- \( \hat{\mu}_k \) is the average reward for arm \( k \) up to time \( t \),
+- \( t \) is the current time step (number of total trials),
+- \( n_k \) is the number of times arm \( k \) has been selected,
+- \( c \) is a constant that controls the level of exploration.
+
+Selection Process
+
+At each time step \( t \), the UCB1 algorithm selects the arm \( k \) with the highest \( UCB_k \) value:
+
+\[
+k = \underset{k}{\mathrm{argmax}} \left( \hat{\mu}_k + \sqrt{\frac{3 \ln(t)}{2 n_k}} \right)
+\]
+
+This selection strategy encourages exploration of less-tested arms, but over time, the algorithm converges to selecting the arm with the highest expected reward.
+
+
+
+```{r}
+# Parameters
+n_trials <- 10000  # Number of trials
+arms <- 4          # Number of paths
+
+```
+
+```{r}
+# Initialization for UCB
+counts <- numeric(arms) # Track how many times each path has been selected
+rewards <- numeric(arms) # Accumulate total rewards (negative delays) for each path
+ucb_values <- numeric(arms) # Store UCB values for each arm
+
+converged_at_trial <- 0
+conv_num <- 5
+convergence_threshold <- 1 #% percentage for convergence
+all_average_rewards <- list()
+converged <- FALSE
+
+# Constant c for the exploration factor in UCB
+c <- 2
+
+for (i in 1:n_trials) {
+  # Calculate UCB values
+  for (arm in 1:arms) {
+    if (counts[arm] == 0) {
+      ucb_values[arm] <- Inf  # If an arm hasn't been selected, prioritize its selection
+    } else {
+      average_reward <- rewards[arm] / counts[arm]
+      ucb_values[arm] <- average_reward + c * sqrt(log(i)/counts[arm])
+    }
+  }
+  
+  # Choose the arm with the highest UCB value
+  chosen_arm <- which.max(ucb_values)
+  
+  # Simulate reward for the chosen arm
+  reward <- -switch(chosen_arm,
+                    sample(mg1_packets_path1, 1),
+                    sample(mg1_packets_path2, 1),
+                    sample(mg1_packets_path3, 1),
+                    sample(mg1_packets_path4, 1))
+  
+  # Update counts and rewards
+  counts[chosen_arm] <- counts[chosen_arm] + 1
+  rewards[chosen_arm] <- rewards[chosen_arm] + reward
+  
+  # Check for convergence (similar to the previous epsilon-greedy check)
+  average_rewards <- rewards / pmax(counts, 1)
+  all_average_rewards[[i]] <- average_rewards
+  
+
+  if (get_n_trial_convergence(all_average_rewards, i, conv_num, convergence_threshold)) {
+    break
+  }
+  
+  
+}
+# Visualising the results
+barplot(counts,
+     col = 'blue',
+     main = 'Histogram of Paths selections',
+     xlab = 'Paths',
+     ylab = 'Number of times each path  was selected')
+
+```
+
+## Results
+```{r}
+average_rewards <- rewards/counts
+cat("Counts of selections for each path:", counts, "\n")
+cat("Average rewards (negative delay) for each path:", average_rewards, "\n")
+cat("The best path is: Path", which.max(average_rewards), "\n")
+```
+
+# Softmax
+
+## 5. Softmax Algorithm
+
+The Softmax algorithm assigns probabilities to each arm based on its estimated reward, allowing for probabilistic exploration. This approach ensures that arms with higher rewards are chosen more often, while still allowing exploration of other arms in proportion to their estimated rewards.
+
+### Formula for Softmax Selection
+
+For each arm \( k \) at time \( t \), the probability \( P_k \) of selecting arm \( k \) is given by:
+
+\[
+P_k = \frac{e^{\hat{\mu}_k / \tau}}{\sum_{j=1}^K e^{\hat{\mu}_j / \tau}}
+\]
+
+where:
+- \( \hat{\mu}_k \) is the estimated average reward of arm \( k \),
+- \( K \) is the total number of arms,
+- \( \tau \) (temperature parameter) controls the level of exploration vs. exploitation.
+
+
+1. **Temperature \( \tau \)**: 
+   - When \( \tau \) is high, the probabilities for each arm become more uniform, resulting in more exploration.
+   - When \( \tau \) is low, the algorithm favors arms with higher estimated rewards, leading to more exploitation.
+
+2. **Probability-based Selection**:
+   - The exponential function \( e^{\hat{\mu}_k / \tau} \) amplifies differences in estimated rewards, so arms with higher rewards have a higher selection probability.
+   - Probabilities are normalized by dividing by the sum across all arms to ensure they sum to 1.
+
+### Selection Process
+At each time step \( t \), the Softmax algorithm selects an arm \( k \) based on the probability \( P_k \):
+
+\[
+k \sim \text{Multinomial}(P_1, P_2, \dots, P_K)
+\]
+
+This selection method maintains a balance between exploration and exploitation, with the degree of exploration controlled by the temperature \( \tau \).
+
+
+```{r}
+
+# Parameters
+n_trials <- 10000  # Number of trials
+arms <- 4          # Number of paths
+
+counts <- numeric(arms)  # Track how many times each path has been selected
+rewards <- numeric(arms)  # Accumulate total rewards (negative delays) for each path
+temperature <- 1  # Temperature parameter for Softmax (controls exploration vs. exploitation)
+convergence_threshold <- 1 #% percentage for convergence
+all_average_rewards <- list() 
+
+# Function to calculate the softmax probabilities
+softmax <- function(values, temperature) {
+  exp_values <- exp(values / temperature)  # Scale rewards using the temperature parameter
+  return(exp_values / sum(exp_values))  # Return probabilities
+}
+# Run the Softmax algorithm
+for (i in 1:n_trials) {
+
+  # Compute the probabilities using Softmax
+  probabilities <- softmax(average_rewards, temperature)
+  # Choose an arm based on the computed probabilities
+  chosen_arm <- sample(1:arms, 1, prob = probabilities)
+  
+  # Simulate reward (negative delay) from the chosen path
+  reward <- -switch(chosen_arm,
+                    sample(mg1_packets_path1, 1),
+                    sample(mg1_packets_path2, 1),
+                    sample(mg1_packets_path3, 1),
+                    sample(mg1_packets_path4, 1))
+  
+  # Update counts and rewards
+  counts[chosen_arm] <- counts[chosen_arm] + 1
+  rewards[chosen_arm] <- rewards[chosen_arm] + reward
+  # Compute average rewards
+  average_rewards <- rewards / pmax(counts, 1)  # Avoid division by zero
+  
+  all_average_rewards[[i]] <- average_rewards
+  
+  if (get_n_trial_convergence(all_average_rewards, i, conv_num, convergence_threshold)) {
+    break
+  }
+  
+}
+
+# Visualising the results
+barplot(counts,
+        col = 'green',
+        main = 'Histogram of Path Selections (Softmax)',
+        xlab = 'Paths',
+        ylab = 'Number of Times Each Path Was Selected')
+
+
+```
+## Results
+```{r}
+average_rewards <- rewards/counts
+cat("Counts of selections for each path:", counts, "\n")
+cat("Average rewards (negative delay) for each path:", average_rewards, "\n")
+cat("The best path is: Path", which.max(average_rewards), "\n")
+```
+
+
+
+
+# Simulation for the percentiles
+## Checking if e2e delay is below the given threshold
+
+
+$T_{\text{threshold}}$ = 100 us 
+
+ \[ \begin{cases} Delay > T_{\text{threshold}}, \text{reward} = -1\\ \quad Delay < T_{\text{threshold}}, \text{reward} = 0  \end{cases} \]
+```{r}
+threshold = 1e-4 #s
+set.seed(42)
+```
+
+
+```{r}
+k_num = n_trials
+mg1_packets_path1 <- simmer_mg1(g, Capacity_Gbps = 10, Load = 0.8, PS_size, PS_weights, k_num, path1_v, distance_n_times = 6)
+mg1_packets_path2 <- simmer_mg1(g, Capacity_Gbps = 10, Load = 0.5, PS_size, PS_weights, k_num, path2_v, distance_n_times = 6)
+mg1_packets_path3 <- simmer_mg1(g, Capacity_Gbps = 10, Load = 0.4, PS_size, PS_weights, k_num, path3_v, distance_n_times = 6)
+mg1_packets_path4 <- simmer_mg1(g, Capacity_Gbps = 10, Load = 0.1, PS_size, PS_weights, k_num, path4_v, distance_n_times = 6)
+cat("Total simulated average delay path1", mean(mg1_packets_path1), "s \n")
+cat("Total simulated average delay path2", mean(mg1_packets_path2), "s \n")
+cat("Total simulated average delay path3", mean(mg1_packets_path3), "s \n")
+cat("Total simulated average delay path4", mean(mg1_packets_path4), "s \n")
+```
+ 
+ 
+```{r echo=FALSE}
+
+mg1_packets_path1 = mg1_packets_path1 * 1e6
+mg1_packets_path2 = mg1_packets_path2 * 1e6
+mg1_packets_path3 = mg1_packets_path3 * 1e6
+mg1_packets_path4 = mg1_packets_path4 * 1e6
+
+# Calculate maximum density value across all paths
+max_y <- max(max(density(mg1_packets_path1)$y),
+             max(density(mg1_packets_path2)$y),
+             max(density(mg1_packets_path3)$y),
+             max(density(mg1_packets_path4)$y))
+max_x <- max(max(density(mg1_packets_path1)$x),
+             max(density(mg1_packets_path2)$x),
+             max(density(mg1_packets_path3)$x),
+             max(density(mg1_packets_path4)$x))
+
+# Plot densities for each path with adapted axis limits
+plot(density(mg1_packets_path1), col = rgb(1, 0, 0, 0.5), lty = 2, lwd = 3, xlim = c(0, max_x), ylim = c(0, max_y), xlab = "Latency (us)", main = "")
+lines(density(mg1_packets_path2), col = rgb(0, 1, 0, 0.5), lty = 2, lwd = 3)
+lines(density(mg1_packets_path3), col = rgb(0, 0, 1, 0.5), lty = 2, lwd = 3)
+lines(density(mg1_packets_path4), col = rgb(0.5, 0, 0.5, 0.5), lty = 2, lwd = 3)
+abline(v = threshold*1e6, col = "black", lty = 1, lwd = 2)
+
+# Add legends for each component
+legend("topleft", legend=c("Path 1", "Path 2", "Path 3", "Path 4", expression(T[thres])),
+       col=c(rgb(1, 0, 0, 0.5), rgb(0, 1, 0, 0.5), rgb(0, 0, 1, 0.5), rgb(0.5, 0, 0.5, 0.5), "black"),
+       lty=c(2, 2, 2, 2, 1), lwd=c(3, 3, 3, 3, 3), inset = c(0.01, 0.01), xpd = TRUE)
+
+# Reset to a single plot
+par(mfrow=c(1, 1))
+grid()
+
+mg1_packets_path1 = mg1_packets_path1 / 1e6
+mg1_packets_path2 = mg1_packets_path2 / 1e6
+mg1_packets_path3 = mg1_packets_path3 / 1e6
+mg1_packets_path4 = mg1_packets_path4 / 1e6
+
+```
+
+Percent above threshold for entire population:
+```{r include=FALSE}
+theor_perc <- function(mg1_packet_delays, threshold){
+  below_threshold <- sum(mg1_packet_delays > threshold)
+  total_values <- length(mg1_packet_delays)
+  percent_below_threshold <- (below_threshold / total_values) * 100
+  return(percent_below_threshold)
+}
+
+```
+
+```{r}
+print(paste("Percentage above threshold theoretical:", theor_perc(mg1_packets_path1, threshold), "%"))
+print(paste("Percentage above threshold theoretical:", theor_perc(mg1_packets_path2, threshold), "%"))
+print(paste("Percentage above threshold theoretical:", theor_perc(mg1_packets_path3, threshold), "%"))
+print(paste("Percentage above threshold theoretical:", theor_perc(mg1_packets_path4, threshold), "%"))
+
+```
+
+# Epsilon-Greedy Algorithm
+
+```{r}
+
+counts <- numeric(arms) # A vector initialized with zeros to track how many times each path has been selected
+penalties <- numeric(arms) # A vector initialized with zeros to accumulate the total penalties (negative delays) obtained from each path
+
+converged_at_trial <- 0
+conv_num <- 25
+convergence_threshold <- 1 #%
+all_average_penalties <- list() 
+converged <- FALSE
+
+for(i in 1:n_trials){
+  # Decide to explore or exploit
+  if(runif(1) < epsilon){
+    # Exploration: choose a random path
+    chosen_arm <- sample(arms, 1)
+  } else {
+    # Exploitation: choose the best path based on average penalty
+    average_penalties <- penalties/pmax(counts, 1)
+    chosen_arm <- which.max(average_penalties)
+  }
+  
+  # Simulate the delay (penalty) from the chosen path
+  delay <- switch(chosen_arm,
+                 sample(mg1_packets_path1,1),
+                 sample(mg1_packets_path2,1),
+                 sample(mg1_packets_path3,1),
+                 sample(mg1_packets_path4,1)) 
+
+  # Update counts and penalties
+  penalty = -ifelse(delay > threshold, 1, 0)
+  counts[chosen_arm] <- counts[chosen_arm] + 1
+  penalties[chosen_arm] <- penalties[chosen_arm] + penalty
+
+  all_average_penalties[[i]] <- penalties/counts
+  
+  if (get_n_trial_convergence(all_average_penalties, i, conv_num, convergence_threshold)) {
+    break
+  }
+}
+
+# Visualising the results
+barplot(counts,
+        col = 'green',
+        main = 'Histogram of Path Selections (Softmax)',
+        xlab = 'Paths',
+        ylab = 'Number of Times Each Path Was Selected')
+
+
+```
+
+## Results
+```{r}
+average_rewards <- penalties/counts
+cat("Counts of selections for each path:", counts, "\n")
+cat("Total rewards (negative delay) for each path:", penalties, "\n")
+cat("Average rewards (negative delay) for each path:", average_penalties, "\n")
+cat("Percent of packets above threshold simulated:", -average_penalties*1e2, "% \n")
+cat("Percent of packets above threshold theoretical:", theor_perc(mg1_packets_path1, threshold),theor_perc(mg1_packets_path2, threshold),theor_perc(mg1_packets_path3, threshold),theor_perc(mg1_packets_path4, threshold), "% \n")
+cat("The best path is: Path", which.max(average_penalties), "\n")
+```
+
+
+
+# Thompson Sampling
+
+Thompson Sampling is a Bayesian approach to the Multi-Armed Bandit problem. Thompson Sampling maintains a probability distribution (often Beta distribution for binary rewards) over the expected reward for each arm. After each trial, the distribution for the chosen arm is updated based on the observed reward, allowing the model to refine its beliefs over time.
+
+1. **Prior Distribution**: 
+   For each arm \( k \), initialize a prior distribution for the expected reward. For binary rewards, a common choice is the **Beta distribution** \( \text{Beta}(\alpha_k, \beta_k) \), where:
+   - \( \alpha_k \) represents the number of successful trials for arm \( k \) (initially set to 1) - numbers_of_rewards_1,
+   - \( \beta_k \) represents the number of failures for arm \( k \) (initially set to 1) - numbers_of_rewards_0.
+
+2. **Sampling Step**:
+   At each time step \( t \), for each arm \( k \), sample a random value \( \theta_k \) from its Beta distribution:
+   \[
+   \theta_k \sim \text{Beta}(\alpha_k, \beta_k)
+   \]
+   This value \( \theta_k \) represents the probability that arm \( k \) is optimal according to the current belief.
+
+3. **Selection**:
+   Select the arm \( k \) with the highest sampled value \( \theta_k \):
+   \[
+   k = \underset{k}{\mathrm{argmax}} \, \theta_k
+   \]
+
+4. **Update**:
+   After observing the reward \( r \) for the selected arm \( k \):
+   - If \( r = 0 \) (success), increment \( \alpha_k \) by 1.
+   - If \( r = -1 \) (failure), increment \( \beta_k \) by 1.
+   
+   This update step refines the probability distribution for arm \( k \) based on observed outcomes.
+
+
+- **Exploration and Exploitation Balance**: Thompson Sampling explores naturally by sampling from the distribution of each arm. Arms with uncertain or higher estimated rewards are more likely to be selected, while arms with lower rewards are gradually selected less often.
+
+- **Adaptiveness**: As more trials are conducted, the distributions for each arm converge, enabling the algorithm to more confidently select the arm with the highest expected reward.
+
+### Selection Process Summary
+At each time step \( t \):
+1. Sample \( \theta_k \) from \( \text{Beta}(\alpha_k, \beta_k) \) for each arm \( k \).
+2. Select the arm \( k \) with the largest \( \theta_k \).
+3. Update the distribution parameters \( \alpha_k \) and \( \beta_k \) based on the observed reward.
+
+
+```{r}
+converged_at_trial <- 0
+conv_num <- 5
+convergence_threshold <- 0.1 #%
+converged <- FALSE
+
+# Initialization
+counts <- numeric(arms) # Track how many times each path has been selected
+penalties <- numeric(arms) # Accumulate total rewards (negative delays) for each path
+all_average_penalties <- list() 
+
+numbers_of_rewards_1 = integer(arms)
+numbers_of_rewards_0 = integer(arms)
+
+for (i in 1:n_trials) {
+  max_random = 0
+  for (arm in 1:arms) {
+    random_beta = rbeta(n = 1,
+                        shape1 = numbers_of_rewards_1[arm] + 1,
+                        shape2 = numbers_of_rewards_0[arm] + 1)
+    if (random_beta > max_random) {
+      max_random = random_beta
+      chosen_arm = arm
+    }
+  }
+
+  delay = switch(chosen_arm,
+                    sample(mg1_packets_path1, 1),
+                    sample(mg1_packets_path2, 1),
+                    sample(mg1_packets_path3, 1),
+                    sample(mg1_packets_path4, 1))
+  
+
+  penalty = -ifelse(delay > threshold, 1, 0)
+  counts[chosen_arm] <- counts[chosen_arm] + 1
+  penalties[chosen_arm] <- penalties[chosen_arm] + penalty
+  
+  if (penalty == 0) {
+    numbers_of_rewards_1[chosen_arm] = numbers_of_rewards_1[chosen_arm] + 1 #win
+  } else {
+    numbers_of_rewards_0[chosen_arm] = numbers_of_rewards_0[chosen_arm] + 1 #lose
+  }
+
+  all_average_penalties[[i]] <- penalties/counts
+  average_penalties <- all_average_penalties[[i]]
+  if (any(!is.na(all_average_penalties[[i]]) & all_average_penalties[[i]] != 0)) {
+    
+    if (get_n_trial_convergence(all_average_penalties, i, conv_num, convergence_threshold)) {
+      break
+    }
+  }
+    
+
+}
+
+
+barplot(counts,
+     col = 'blue',
+     main = 'Histogram of Paths selections',
+     xlab = 'Paths',
+     ylab = 'Number of times each path was selected')
+
+
+```
+## Results
+```{r}
+average_rewards <- penalties/counts
+cat("Counts of selections for each path:", counts, "\n")
+cat("Total rewards (negative delay) for each path:", penalties, "\n")
+cat("Average rewards (negative delay) for each path:", average_penalties, "\n")
+cat("Percent of packets above threshold simulated:", -average_penalties*1e2, "% \n")
+cat("Percent of packets above threshold theoretical:", theor_perc(mg1_packets_path1, threshold),theor_perc(mg1_packets_path2, threshold),theor_perc(mg1_packets_path3, threshold),theor_perc(mg1_packets_path4, threshold), "% \n")
+
+# Find the indices of the maximum average penalties
+max_penalty_index <- which.max(average_penalties)
+
+# Check if the maximum average penalty is zero
+if (average_penalties[max_penalty_index] == 0) {
+  # Get the indices of all paths with zero average penalties
+  zero_indices <- which(average_penalties == 0)
+  
+  # If there are multiple zero penalties, choose the one with the maximum count
+  best_path_index <- zero_indices[which.max(counts[zero_indices])]
+} else {
+  # If there's a non-zero maximum penalty, use that index
+  best_path_index <- max_penalty_index
+}
+
+# Print the best path
+cat("The best path is: Path", best_path_index, "\n")
+```
+
+
+
+# EXP3 (Exponential-weight algorithm for Exploration and Exploitation)
+
+Reverted
+
+EXP3 is a multi-armed bandit algorithm designed for adversarial settings, where rewards are not necessarily stochastic and may even be controlled by an adversary.
+
+EXP3 assigns weights to each arm based on observed rewards. These weights are used to update the selection probabilities, favoring arms with higher rewards but still exploring with a probability controlled by a learning rate parameter.
+
+1. **Initialize Weights**:
+   Assign an initial weight \( w_k = 1 \) for each arm \( k \), where \( k = 1, 2, \dots, K \), and initialize a learning rate \( \gamma \) (typically a small positive value, such as 0.1).
+
+2. **Calculate Probabilities**:
+   At each time step \( t \), calculate the probability \( P_k \) of selecting each arm \( k \) using the weights:
+   \[
+   P_k = (1 - \gamma) \frac{w_k}{\sum_{j=1}^K w_j} + \frac{\gamma}{K}
+   \]
+   This probability distribution favors arms with higher weights but includes a factor \( \frac{\gamma}{K} \) to ensure exploration across all arms.
+
+3. **Select an Arm**:
+   Select an arm \( k \) randomly according to the probability distribution \( P_k \).
+
+4. **Observe Reward and Update Weight**:
+   After selecting arm \( k \), observe the reward \( r_k \). To avoid bias from arms that are selected infrequently, compute the **estimated reward** \( \hat{r}_k \):
+   \[
+   \hat{r}_k = \frac{r_k}{P_k}
+   \]
+   Then, update the weight \( w_k \) for the selected arm using the estimated reward:
+   \[
+   w_k \leftarrow w_k \cdot \exp\left(\frac{\gamma \hat{r}_k}{K}\right)
+   \]
+
+- **Exploration and Exploitation Balance**: 
+   - The parameter \( \gamma \) controls the trade-off between exploration and exploitation.
+   - A smaller \( \gamma \) favors exploitation, while a larger \( \gamma \) encourages exploration by flattening the probability distribution.
+
+
+### Selection Process Summary
+
+At each time step \( t \):
+1. Compute probabilities \( P_k \) for each arm using the weights.
+2. Select an arm \( k \) based on the probability distribution \( P_k \).
+3. Update the weight \( w_k \) for the selected arm based on the observed reward.
+
+The EXP3 algorithm is well-suited for scenarios where rewards are non-stationary or potentially controlled by an adversary, making it a robust choice in such environments.
+
+
+
+```{r}
+# Initialization
+arms <- 4  # Number of arms/paths
+n_trials <- 10000  # Number of trials to run the algorithm
+weights <- rep(1, arms)  # Initialize weights for each arm to 1
+gamma <- 0.1  # Exploration parameter (between 0 and 1)
+probabilities <- rep(1 / arms, arms)  # Initial equal probability for each arm
+counts <- numeric(arms)  # Track how many times each path has been selected
+rewards <- numeric(arms)  # Accumulate total rewards (negative delays) for each path
+all_average_rewards <- list()
+average_rewards <- rep(0, arms)
+convergence_threshold <- 1
+# EXP3 Algorithm
+for (i in 1:n_trials) {
+  # Calculate probabilities for choosing each arm
+  probabilities <- (1 - gamma) * (weights / sum(weights)) + gamma / arms
+  
+  # Choose an arm based on the computed probabilities
+  chosen_arm <- sample(1:arms, 1, prob = probabilities)
+
+  # Simulate reward (negative delay) from the chosen path
+  delay <- switch(chosen_arm,
+                    sample(mg1_packets_path1, 1),
+                    sample(mg1_packets_path2, 1),
+                    sample(mg1_packets_path3, 1),
+                    sample(mg1_packets_path4, 1))
+  
+  reward = ifelse(delay > threshold, 0, 1)
+
+  # Update counts and rewards
+  counts[chosen_arm] <- counts[chosen_arm] + 1
+
+  # Update the weights for the chosen arm
+  estimated_reward <- reward / probabilities[chosen_arm]
+  weights[chosen_arm] <- weights[chosen_arm] * exp((gamma * estimated_reward) / arms)
+  average_rewards[chosen_arm] <- average_rewards[chosen_arm] + estimated_reward
+  all_average_rewards[[i]] <- average_rewards
+  if (get_n_trial_convergence(all_average_rewards, i, conv_num, convergence_threshold)) {
+    break
+  }
+  
+}
+
+# Visualising the results
+barplot(weights,
+        col = 'orange',
+        main = 'Histogram of Path Selections (EXP3)',
+        xlab = 'Paths',
+        ylab = 'Number of Times Each Path Was Selected')
+
+# Show average rewards for each arm
+print(average_rewards)
+print("Average Rewards for Each Path:")
+print(which.max(average_rewards))
+
+```
+
+## Results
+```{r}
+cat("Counts of selections for each path:", counts, "\n")
+cat("Average rewards (negative delay) for each path:", average_rewards, "\n")
+
+
+# Find the indices of the maximum average penalties
+max_penalty_index <- which.max(average_rewards)
+
+# Check if the maximum average penalty is zero
+if (average_penalties[max_penalty_index] == 0) {
+  # Get the indices of all paths with zero average penalties
+  zero_indices <- which(average_penalties == 0)
+  
+  # If there are multiple zero penalties, choose the one with the maximum count
+  best_path_index <- zero_indices[which.max(counts[zero_indices])]
+} else {
+  # If there's a non-zero maximum penalty, use that index
+  best_path_index <- max_penalty_index
+}
+
+# Print the best path
+cat("The best path is: Path", best_path_index, "\n")
+```

@@ -389,8 +389,6 @@ for (test in 1:tests){
       }
     }
     
-    print(chosen_arm)
-    
     # Choose the arm with the highest UCB value
     #chosen_arm <- which.max(ucb_values)
     
@@ -465,7 +463,6 @@ for (test in 1:tests){
     rewards[chosen_arm] <- rewards[chosen_arm] + reward
     # Compute average rewards
     average_rewards <- rewards / pmax(counts, 1)  # Avoid division by zero
-    print(average_rewards)
     if (optimal_path == which.max(average_rewards)){
       
       prob_opt_path_selected[i] <- prob_opt_path_selected[i] + 1

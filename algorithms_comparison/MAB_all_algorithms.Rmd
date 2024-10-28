@@ -177,7 +177,7 @@ N = sum(PS_size*PS_weights)
 N
 
 topology_name = "Tokyo"
-file_name_v2 <- "input_files/Metro_topology_full_Tokyo.xlsx"
+file_name_v2 <- "../input_files/Metro_topology_full_Tokyo.xlsx"
 nodes_info <- read_excel(file_name_v2, sheet = 1)
 links_info <- read_excel(file_name_v2, sheet = 2)
 ```
@@ -513,9 +513,6 @@ convergence_threshold <- 1 #% percentage for convergence
 all_average_rewards <- list()
 converged <- FALSE
 
-# Constant c for the exploration factor in UCB
-c <- 2
-
 for (i in 1:n_trials) {
   # Calculate UCB values
   for (arm in 1:arms) {
@@ -523,7 +520,7 @@ for (i in 1:n_trials) {
       ucb_values[arm] <- Inf  # If an arm hasn't been selected, prioritize its selection
     } else {
       average_reward <- rewards[arm] / counts[arm]
-      ucb_values[arm] <- average_reward + c * sqrt(log(i)/counts[arm])
+      ucb_values[arm] <- average_reward + sqrt(3/2*log(i)/counts[arm])
     }
   }
   
